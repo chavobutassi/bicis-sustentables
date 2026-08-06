@@ -1,17 +1,74 @@
 // Variables globales
 let listaEstaciones = []; // Para llenar selects
 
-document.addEventListener("DOMContentLoaded", async () => {
-    await verificarAdmin();
-    cargarTodo();
-});
+document.addEventListener("DOMContentLoaded",
+    async () => {
+
+        const estaLogueado =
+            sessionStorage.getItem("usuarioLogueado")
+            === "true";
+
+        const esAdmin =
+            sessionStorage.getItem("usuarioRol")
+            === "ADMIN";
+
+        /*
+         * Control visual para páginas almacenadas
+         * por el navegador.
+         */
+        if (!estaLogueado) {
+            window.location.replace(
+                "index.html#login-anchor"
+            );
+            return;
+        }
+
+        if (!esAdmin) {
+            window.location.replace(
+                "index.html"
+            );
+            return;
+        }
+
+        /*
+         * Comprobación real contra el backend.
+         */
+        const autorizado =
+            await verificarAdmin();
+
+        if (!autorizado) {
+            return;
+        }
+
+        cargarTodo();
+    }
+);
 
 async function verificarAdmin() {
+
     try {
-        // Intentamos acceder a un recurso protegido de ADMIN
-        await axios.get('/api/admin/estadisticas/resumen');
+        await axios.get(
+            '/api/admin/estadisticas/resumen'
+        );
+
+        return true;
+
     } catch (error) {
-        window.location.href = 'index.html'; // Si falla (403), fuera
+
+        const estado =
+            error.response?.status;
+
+        if (estado === 401) {
+            window.location.replace(
+                'index.html#login-anchor'
+            );
+        } else {
+            window.location.replace(
+                'index.html'
+            );
+        }
+
+        return false;
     }
 }
 

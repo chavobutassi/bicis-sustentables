@@ -133,7 +133,14 @@ public class WebAuthorization {
                 .passwordParameter("password")
                 .loginPage("/api/login");
 
-        http.logout().logoutUrl("/api/logout");
+        http.logout()
+                .logoutUrl("/api/logout")
+                .invalidateHttpSession(true)
+                .clearAuthentication(true)
+                .deleteCookies("JSESSIONID")
+                .logoutSuccessHandler(
+                        new HttpStatusReturningLogoutSuccessHandler()
+                );
 
         // CONFIGURACION REST (Reemplaza HTML por códigos HTTP)
         http.csrf().disable();
@@ -147,8 +154,6 @@ public class WebAuthorization {
 
         http.formLogin().failureHandler((req, res, exc) ->
                 res.sendError(HttpServletResponse.SC_UNAUTHORIZED));
-
-        http.logout().logoutSuccessHandler(new HttpStatusReturningLogoutSuccessHandler());
 
         return http.build();
     }

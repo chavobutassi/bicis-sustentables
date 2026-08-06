@@ -4,38 +4,95 @@
  * muestra un "Toast" de éxito y redirige al index.
  */
 async function logout() {
-    
-    // 1. Definir el "Toast"
+
     const Toast = Swal.mixin({
         toast: true,
         position: 'top-end',
         showConfirmButton: false,
-        timer: 1500, // Dura 1.5 segundos
+        timer: 1500,
         timerProgressBar: true
     });
 
     try {
-        // 2. Llama al backend (POST)
-        await axios.post('/api/logout'); 
+        /*
+         * Cerrar la sesión real del servidor.
+         * withCredentials asegura el envío de JSESSIONID.
+         */
+        await axios.post(
+            '/api/logout',
+            null,
+            {
+                withCredentials: true
+            }
+        );
+
+        /*
+         * Verificar que la sesión realmente haya dejado
+         * de ser válida antes de informar éxito.
+         */
+        try {
+            await axios.get(
+                '/api/usuarios/actual',
+                {
+                    withCredentials: true
+                }
+            );
+
+            /*
+             * Si esta petición devuelve 200, la sesión
+             * continúa activa y el logout no funcionó.
+             */
+            throw new Error(
+                'La sesión continúa activa después del logout.'
+            );
+
+        } catch (verificacionError) {
+
+            const estado =
+                verificacionError.response?.status;
+
+            /*
+             * 401 o 403 confirman que ya no existe
+             * una sesión autenticada válida.
+             */
+            if (estado !== 401 && estado !== 403) {
+                throw verificacionError;
+            }
+        }
+
+        /*
+         * Limpiar toda la información local solamente
+         * después de confirmar el cierre del backend.
+         */
+        sessionStorage.clear();
+
+        await Toast.fire({
+            icon: 'success',
+            title: '¡Sesión cerrada con éxito!'
+        });
+
+        /*
+         * replace impide volver a la página privada
+         * mediante el botón Atrás del navegador.
+         */
+        window.location.replace(
+            'index.html'
+        );
+
     } catch (error) {
-        console.error("La sesión del backend ya había expirado o falló el logout:", error);
+
+        console.error(
+            'No se pudo cerrar la sesión correctamente:',
+            error
+        );
+
+        await Swal.fire({
+            icon: 'error',
+            title: 'No se pudo cerrar la sesión',
+            text: 'La sesión continúa activa. Intentá nuevamente.',
+            confirmButtonColor: '#198754'
+        });
     }
-
-    // 3. Limpiar la sesión del frontend (SIEMPRE)
-    sessionStorage.removeItem("usuarioLogueado");
-    sessionStorage.removeItem("usuarioRol");
-    sessionStorage.removeItem('usuarioNombre');
-
-    // 4. Mostrar la notificación de éxito
-    Toast.fire({
-        icon: 'success',
-        title: '¡Sesión cerrada con éxito!'
-    });
-
-    // 5. Esperar 1.5s y redirigir al index
-    setTimeout(() => {
-        window.location.href = 'index.html';
-    }, 1500);
 }
 
 // --- FUNCIÓN PARA CARGAR EL NOMBRE DEL USUARIO ---

@@ -7,8 +7,12 @@ let monedaActual = 'USD'; // USD o ARS
 
 document.addEventListener("DOMContentLoaded", async function() {
     // 1. Verificar si hay sesión (básico)
-    if (!sessionStorage.getItem("usuarioLogueado")) {
-        window.location.href = "index.html#login-anchor";
+    const estaLogueado =
+        sessionStorage.getItem("usuarioLogueado") === "true";
+    if (!estaLogueado) {
+        window.location.replace(
+            "index.html#login-anchor"
+        );
         return;
     }
 

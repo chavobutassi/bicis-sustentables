@@ -4,6 +4,21 @@ let monedaActual = 'USD';
 
 document.addEventListener("DOMContentLoaded", async function() {
 
+    /*
+     * Evita mostrar una copia almacenada por el navegador
+     * después de cerrar sesión.
+     * La seguridad real sigue estando en Spring Security.
+     */
+    const estaLogueado =
+        sessionStorage.getItem("usuarioLogueado") === "true";
+
+    if (!estaLogueado) {
+        window.location.replace(
+            "index.html#login-anchor"
+        );
+        return;
+    }
+
     // Cargar los alquileres y nombre de usuario logueado
     await Promise.all([
         cargarNombreUsuario(),
