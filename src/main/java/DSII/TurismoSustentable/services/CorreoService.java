@@ -21,19 +21,22 @@ public class CorreoService {
     private static final Logger LOGGER =
             LoggerFactory.getLogger(CorreoService.class);
 
-    private static final String BREVO_URL =
-            "https://api.brevo.com/v3/smtp/email";
+    private static final String MAILJET_URL =
+            "https://api.mailjet.com/v3.1/send";
 
     private final RestTemplate restTemplate =
             new RestTemplate();
 
-    @Value("${brevo.api-key:}")
+    @Value("${mailjet.api-key:}")
     private String apiKey;
 
-    @Value("${brevo.sender-email:}")
+    @Value("${mailjet.secret-key:}")
+    private String secretKey;
+
+    @Value("${mailjet.sender-email:}")
     private String senderEmail;
 
-    @Value("${brevo.sender-name:Turismo Sustentable}")
+    @Value("${mailjet.sender-name:Turismo Sustentable}")
     private String senderName;
 
     public boolean enviarCorreo(
@@ -44,10 +47,11 @@ public class CorreoService {
     ) {
 
         if (!StringUtils.hasText(apiKey)
+                || !StringUtils.hasText(secretKey)
                 || !StringUtils.hasText(senderEmail)) {
 
             LOGGER.warn(
-                    "Correo no enviado: Brevo todavía no está configurado."
+                    "Correo no enviado: Mailjet todavía no está configurado."
             );
 
             return false;
@@ -55,32 +59,43 @@ public class CorreoService {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set(
-                "api-key",
-                apiKey
+
+        /*
+         * Mailjet utiliza autenticación básica:
+         * API Key como usuario y Secret Key como contraseña.
+         */
+        headers.setBasicAuth(
+                apiKey,
+                secretKey
         );
 
         Map<String, String> remitente = new HashMap<>();
-        remitente.put("name", senderName);
-        remitente.put("email", senderEmail);
+        remitente.put("Email", senderEmail);
+        remitente.put("Name", senderName);
 
         Map<String, String> receptor = new HashMap<>();
-        receptor.put("email", destinatario);
+        receptor.put("Email", destinatario);
         receptor.put(
-                "name",
+                "Name",
                 nombreDestinatario != null
                         ? nombreDestinatario
                         : ""
         );
 
-        Map<String, Object> cuerpo = new HashMap<>();
-        cuerpo.put("sender", remitente);
-        cuerpo.put(
-                "to",
+        Map<String, Object> mensaje = new HashMap<>();
+        mensaje.put("From", remitente);
+        mensaje.put(
+                "To",
                 Collections.singletonList(receptor)
         );
-        cuerpo.put("subject", asunto);
-        cuerpo.put("htmlContent", contenidoHtml);
+        mensaje.put("Subject", asunto);
+        mensaje.put("HTMLPart", contenidoHtml);
+
+        Map<String, Object> cuerpo = new HashMap<>();
+        cuerpo.put(
+                "Messages",
+                Collections.singletonList(mensaje)
+        );
 
         HttpEntity<Map<String, Object>> peticion =
                 new HttpEntity<>(cuerpo, headers);
@@ -88,7 +103,7 @@ public class CorreoService {
         try {
             ResponseEntity<String> respuesta =
                     restTemplate.exchange(
-                            BREVO_URL,
+                            MAILJET_URL,
                             HttpMethod.POST,
                             peticion,
                             String.class
@@ -99,19 +114,20 @@ public class CorreoService {
 
             if (enviado) {
                 LOGGER.info(
-                        "Correo enviado correctamente mediante Brevo."
+                        "Correo enviado correctamente mediante Mailjet."
                 );
             }
 
             return enviado;
 
         } catch (RestClientException e) {
+
             /*
-             * Un fallo del correo no debe cancelar un registro
-             * o un alquiler que ya se realizó correctamente.
+             * Un fallo del correo no cancela el registro
+             * ni el alquiler realizado.
              */
             LOGGER.error(
-                    "No se pudo enviar el correo mediante Brevo: {}",
+                    "No se pudo enviar el correo mediante Mailjet: {}",
                     e.getMessage()
             );
 
