@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis Alquileres - Turismo Sustentable</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body class="bg-light d-flex flex-column min-vh-100">
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top shadow">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="index.html"><i class="fas fa-bicycle text-success"></i> Turismo Sustentable</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"><span class="navbar-toggler-icon"></span></button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-lg-center">
+                    <li class="nav-item">
+                        <a class="nav-link" href="alquiler.html">
+                            <i class="fas fa-bicycle me-1"></i>
+                            Alquilar Bicicletas
+                        </a>
+                    </li>
+
+                    <li class="nav-item ms-lg-3">
+                        <a class="nav-link active"
+                           href="mis_alquileres.html">
+                            <i class="fas fa-history me-1"></i>
+                            Mis viajes
+                        </a>
+                    </li>
+
+                    <li class="nav-item ms-lg-3">
+        <span class="nav-link text-white-50">
+            Bienvenido/a,
+            <span id="navbar-username"
+                  class="navbar-username fw-bold text-white"></span>
+        </span>
+                    </li>
+
+                    <li class="nav-item ms-lg-3">
+                        <button onclick="logout()"
+                                class="btn btn-outline-light btn-sm rounded-pill px-3">
+                            <i class="fas fa-sign-out-alt me-1"></i>
+                            Cerrar sesión
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-5 pt-5">
+        <!-- ENCABEZADO Y SWITCH DE MONEDA -->
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
+            <h2 class="fw-bold mb-3 mb-md-0"><i class="fas fa-history text-success"></i> Mi Historial de Viajes</h2>
+            <div class="d-flex align-items-center bg-white p-2 px-3 rounded shadow-sm">
+                <label class="form-label fw-bold text-muted mb-0 me-2">Moneda:</label>
+                <div class="form-check form-switch fs-5 mb-0">
+                    <input class="form-check-input shadow-sm" type="checkbox" role="switch" id="switch-moneda">
+                    <label class="form-check-label text-success fw-bold ms-2" for="switch-moneda" id="label-moneda">US$</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0 mb-5">
+            <div class="card-header bg-success text-white fw-bold">
+                <i class="fas fa-stopwatch"></i> En Curso (Activos)
+            </div>
+            <div class="card-body">
+                <div id="container-activos" class="text-center text-muted py-3">Cargando...</div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-secondary text-white fw-bold">
+                <i class="fas fa-check-double"></i> Finalizados
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                        <tr>
+                            <th>Bicicleta</th>
+                            <th>Inicio</th>
+                            <th>Fin</th>
+                            <th>Costo Total</th>
+                            <th>Estado</th>
+                        </tr>
+                        </thead>
+                        <tbody id="tbody-historial">
+                        </tbody>
+                    </table>
+                </div>
+                <div id="mensaje-historial" class="text-center text-muted mt-2"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalDevolucion" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-header bg-danger text-white border-0">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-map-marker-alt me-2"></i> Finalizar Viaje</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+
+                    <div class="text-center mb-4">
+                        <h4 id="modal-dev-bici" class="fw-bold text-dark mb-1">---</h4>
+                        <p class="text-muted small">Tiempo transcurrido: <strong id="modal-dev-tiempo" class="text-primary">0 min</strong></p>
+                    </div>
+
+                    <input type="hidden" id="modal-dev-id">
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-muted">¿Dónde vas a devolverla?</label>
+                        <select id="select-estacion-destino" class="form-select form-select-lg shadow-sm">
+                            <option value="">Cargando estaciones...</option>
+                        </select>
+                        <div class="form-text mt-2"><i class="fas fa-info-circle"></i> Solo se muestran estaciones con lugares disponibles.</div>
+                    </div>
+
+                </div>
+                <div class="modal-footer bg-light border-0 p-3 justify-content-between rounded-bottom-4">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger rounded-pill px-4 fw-bold" onclick="confirmarDevolucion()">Devolver Bici <i class="fas fa-check ms-1"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-dark text-white text-center py-3 mt-auto">
+        <div class="container">
+            <p class="mb-0">
+                &copy; 2026 Turismo Sustentable Río Grande.
+            </p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script src="js/auth.js"></script>
+    <script src="js/mis_alquileres.js"></script>
+
+</body>
+</html>

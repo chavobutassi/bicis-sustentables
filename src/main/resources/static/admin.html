@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Admin - Turismo Sustentable</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body class="admin-page bg-light d-flex flex-column min-vh-100">
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top shadow">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="index.html">
+            <i class="fas fa-bicycle text-success"></i>
+            <span class="d-none d-sm-inline">Turismo Sustentable</span>
+        </a>
+        <div class="d-flex">
+            <button onclick="logout()" class="btn btn-outline-light btn-sm px-3">
+                <i class="fas fa-sign-out-alt me-1"></i>
+                Cerrar sesión
+            </button>
+        </div>
+    </div>
+</nav>
+
+<header class="bg-success text-white shadow" style="margin-top: 56px;">
+    <div class="container py-4">
+        <div class="d-flex align-items-center justify-content-between">
+            <div>
+                <span class="badge rounded-pill bg-light text-success mb-2">
+                    Modo administrador
+                </span>
+
+                <h1 class="fw-bold mb-1">
+                    Panel de administración
+                </h1>
+
+                <p class="mb-0 opacity-75">
+                    Gestión de usuarios, estaciones, bicicletas y alquileres
+                </p>
+            </div>
+        </div>
+    </div>
+</header>
+
+<div class="container py-4">
+
+    <ul class="nav nav-pills mb-4 gap-2" id="adminTabs" role="tablist" style="--bs-nav-pills-link-active-bg: #198754;">
+        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-usuarios">Usuarios</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-estaciones">Estaciones</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-bicicletas">Bicicletas</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-alquileres">Alquileres</button></li>
+    </ul>
+
+    <div class="tab-content" id="adminTabContent">
+
+        <div class="tab-pane fade show active" id="tab-usuarios">
+            <div class="d-flex justify-content-between mb-3">
+                <h4>Gestión de Usuarios</h4>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-striped table-hover bg-white shadow-sm">
+                    <thead class="table-dark"><tr><th>ID</th><th>Nombre</th><th>Email</th><th>Género</th> <th>Fecha Nac.</th><th>Rol</th><th>Estado</th><th>Acciones</th></tr></thead>
+                    <tbody id="tabla-usuarios-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="tab-estaciones">
+            <div class="d-flex justify-content-between mb-3">
+                <h4>Gestión de Estaciones</h4>
+                <button class="btn btn-success" onclick="abrirModalEstacion()">+ Nueva Estación</button>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-striped table-hover bg-white shadow-sm">
+                    <thead class="table-dark">
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Dirección</th>
+                        <th>Capacidad</th>
+                        <th>Latitud</th>
+                        <th>Longitud</th>
+                        <th>Acciones</th>
+                    </tr>
+                    </thead>
+                    <tbody id="tabla-estaciones-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="tab-bicicletas">
+            <div class="d-flex justify-content-between mb-3">
+                <h4>Gestión de Bicicletas</h4>
+                <button class="btn btn-success" onclick="abrirModalBicicleta()">+ Nueva Bicicleta</button>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-striped table-hover bg-white shadow-sm">
+                    <thead class="table-dark"><tr><th>ID</th><th>Código</th><th>Tipo</th><th>Estado</th><th>Precio/h</th><th>Ubicación</th><th>Acciones</th></tr></thead>
+                    <tbody id="tabla-bicicletas-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="tab-alquileres">
+            <div class="d-flex justify-content-between mb-3">
+                <h4>Gestión de Alquileres</h4>
+                <small class="text-muted">Visualización y control</small>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-striped table-hover bg-white shadow-sm">
+                    <thead class="table-dark"><tr><th>ID</th><th>Usuario</th><th>Bici</th><th>Estado</th><th>Inicio</th><th>Fin</th><th>Total</th><th>Acciones</th></tr></thead>
+                    <tbody id="tabla-alquileres-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalEstacion" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white"><h5 class="modal-title">Datos de Estación</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <input type="hidden" id="estacion-id">
+                <div class="mb-2"><label>Nombre</label><input type="text" class="form-control" id="estacion-nombre"></div>
+                <div class="mb-2"><label>Dirección</label><input type="text" class="form-control" id="estacion-direccion"></div>
+                <div class="mb-2"><label>Capacidad</label><input type="number" class="form-control" id="estacion-capacidad"></div>
+                <div class="mb-2">
+                    <label>Latitud</label>
+                    <input type="number" step="any" class="form-control" id="estacion-latitud" placeholder="Ej: -53.7865">
+                </div>
+                <div class="mb-2">
+                    <label>Longitud</label>
+                    <input type="number" step="any" class="form-control" id="estacion-longitud" placeholder="Ej: -67.7045">
+                </div>
+            </div>
+            <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-success px-4" onclick="guardarEstacion()">Guardar</button></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalBicicleta" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white"><h5 class="modal-title">Datos de Bicicleta</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <input type="hidden" id="bici-id">
+                <div class="mb-2"><label>Código</label><input type="text" class="form-control" id="bici-codigo"></div>
+                <div class="mb-2"><label>Tipo</label>
+                    <select class="form-select" id="bici-tipo">
+                        <option value="MONTANA">Montaña</option><option value="PASEO">Paseo</option><option value="ELECTRICA">Eléctrica</option>
+                    </select>
+                </div>
+                <div class="mb-2"><label>Estado</label>
+                    <select class="form-select" id="bici-estado">
+                        <option value="DISPONIBLE">Disponible</option>
+                        <option value="MANTENIMIENTO">Mantenimiento</option>
+                        <option value="INACTIVA">Inactiva</option>
+                        <option value="ALQUILADA" disabled>Alquilada (estado automático)</option>
+                    </select>
+                </div>
+                <div id="bici-alquiler-aviso"
+                     class="alert alert-warning d-none py-2">
+                    Esta bicicleta tiene un alquiler activo. Solo puede modificarse
+                    el precio. Para cambiar su estado debe finalizar el alquiler.
+                </div>
+                <div class="mb-2"><label>Precio/Hora</label><input type="number" class="form-control" id="bici-precio"></div>
+                <div class="mb-2"><label>Ubicación Actual</label>
+                    <select class="form-select" id="bici-estacion-select">
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-success px-4" onclick="guardarBicicleta()">Guardar</button></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalUsuario" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white"><h5 class="modal-title">Editar Usuario</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <input type="hidden" id="user-id">
+                <div class="mb-2"><label>Nombre</label><input type="text" class="form-control" id="user-nombre"></div>
+                <div class="mb-2"><label>Apellido</label><input type="text" class="form-control" id="user-apellido"></div>
+                <div class="mb-2"><label>Email</label><input type="email" class="form-control" id="user-email"></div>
+                <div class="mb-2"><label>Género</label>
+                    <select class="form-select" id="user-genero">
+                        <option value="FEMENINO">Femenino</option>
+                        <option value="MASCULINO">Masculino</option>
+                        <option value="NO_BINARIO">No Binario</option>
+                        <option value="OTRO">Otro</option>
+                        <option value="PREFIERO_NO_DECIR">Prefiero no decir</option>
+                    </select>
+                </div>
+                <div class="mb-2"><label>Fecha Nacimiento</label>
+                    <input type="date" class="form-control" id="user-fecha">
+                </div>
+            </div>
+            <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-success px-4" onclick="guardarUsuario()">Guardar</button></div>
+        </div>
+    </div>
+</div>
+
+<footer class="bg-dark text-white text-center py-3 mt-auto">
+    <div class="container">
+        <p class="mb-0">
+            &copy; 2026 Turismo Sustentable Río Grande.
+        </p>
+    </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script src="js/auth.js"></script>
+<script src="js/admin.js"></script>
+
+</body>
+</html>

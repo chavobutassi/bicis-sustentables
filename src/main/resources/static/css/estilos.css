@@ -1,0 +1,122 @@
+/* Fondo suave para el header */
+.header-bg {
+    background: linear-gradient(rgba(255,255,255,0.9), rgba(255,255,255,0.9)), url('https://source.unsplash.com/random/1200x400/?bicycle,city');
+    background-size: cover;
+    background-position: center;
+}
+
+/* Mejora el mapa */
+#map {
+    z-index: 1; /* Asegura que el navbar quede por encima */
+}
+
+/* Estilo de los popups del mapa */
+.leaflet-popup-content-wrapper {
+    border-radius: 10px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+}
+
+.leaflet-popup-content h5 {
+    margin-bottom: 5px;
+    color: #198754; /* Verde Success de Bootstrap */
+}
+
+/* Hero Section con fondo */
+.hero-section {
+    /* Reemplazar la URL con una foto de Rio Grande o una bici */
+    background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('https://images.unsplash.com/photo-1571333250630-f0230c320b6d?q=80&w=1470&auto=format&fit=crop');
+    background-size: cover;
+    background-position: center;
+    min-height: 80vh; /* Ocupa el 80% de la altura de la pantalla */
+    margin-top: 56px; /* Espacio para el navbar fijo */
+}
+
+.feature-card {
+    transition: transform 0.3s ease;
+    background-color: #fff;
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+    border-color: #198754 !important; /* Borde verde al pasar el mouse */
+}
+
+.text-success {
+    color: #198754 !important;
+}
+
+.btn-success {
+    background-color: #198754;
+    border-color: #198754;
+}
+
+.btn-success:hover {
+    background-color: #157347;
+    border-color: #146c43;
+}
+
+/* Estilos para alquiler.html */
+.bike-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.bike-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+}
+
+/* Animación de entrada suave */
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Fuerza la barra de desplazamiento vertical siempre visible
+   para evitar saltos en el diseño al cambiar de contenido */
+html {
+    overflow-y: scroll;
+}
+
+/* Evita que Bootstrap mueva el contenido, elimine el scroll o genere desbordes horizontales al abrir modales */
+body.modal-open {
+    overflow: auto !important;
+    padding-right: 0 !important;
+}
+
+/* Fija el navbar absoluto para que no se desplace ni mueva su contenido al abrir modales */
+body.modal-open .fixed-top {
+    padding-right: 0 !important;
+}
+
+.modal {
+    overflow-y: auto;
+}
+
+/* Ajustes del panel administrativo */
+.admin-page .btn {
+    border-radius: 50rem;
+}
+
+.admin-page .table-responsive {
+    border-radius: 12px;
+}
+
+.admin-page .modal-content {
+    border: none;
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.admin-page .table {
+    margin-bottom: 0;
+}
+
+/* Nombre de usuario en barra de navegación */
+.navbar-username {
+    display: inline-block;
+    min-width: 90px;
+}
