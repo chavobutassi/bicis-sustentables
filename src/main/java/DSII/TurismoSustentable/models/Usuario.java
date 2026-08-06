@@ -6,6 +6,7 @@ import org.hibernate.annotations.GenericGenerator;
 import javax.persistence.*;
 import javax.validation.constraints.*;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Locale;
@@ -84,6 +85,15 @@ public class    Usuario {
     private LocalDate fechaRegistro;
     private boolean activo = true;
 
+    @Column(
+            name = "token_recuperacion",
+            length = 64,
+            unique = true
+    )
+    private String tokenRecuperacion;
+
+    @Column(name = "vencimiento_token_recuperacion")
+    private LocalDateTime vencimientoTokenRecuperacion;
 
     @OneToMany(mappedBy = "usuario", fetch = FetchType.EAGER)
     Set<Alquiler> alquileres = new HashSet<>();
@@ -247,6 +257,27 @@ public class    Usuario {
         this.tarjetas = tarjetas;
     }
 
+    public String getTokenRecuperacion() {
+        return tokenRecuperacion;
+    }
+
+    public void setTokenRecuperacion(
+            String tokenRecuperacion
+    ) {
+        this.tokenRecuperacion = tokenRecuperacion;
+    }
+
+    public LocalDateTime getVencimientoTokenRecuperacion() {
+        return vencimientoTokenRecuperacion;
+    }
+
+    public void setVencimientoTokenRecuperacion(
+            LocalDateTime vencimientoTokenRecuperacion
+    ) {
+        this.vencimientoTokenRecuperacion =
+                vencimientoTokenRecuperacion;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -255,7 +286,6 @@ public class    Usuario {
         Usuario usuario = (Usuario) o;
 
         // Usamos el email como identificador único de negocio.
-        // Asegura que tu email tenga una restricción "UNIQUE" en la BD.
         return email != null ? email.equals(usuario.email) : usuario.email == null;
     }
 

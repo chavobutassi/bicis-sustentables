@@ -96,7 +96,40 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 function alquilarBici(estacionId) {
-    // Almacenamos el ID en sessionStorage por si lo necesitas en la próxima pantalla
+
+    const estaLogueado =
+        sessionStorage.getItem('usuarioLogueado') === 'true';
+
+    if (!estaLogueado) {
+
+        Swal.fire({
+            title: 'Iniciá sesión',
+            text: 'Necesitás iniciar sesión para consultar y alquilar bicicletas.',
+            icon: 'info',
+            confirmButtonText: 'Ir al ingreso',
+            confirmButtonColor: '#198754'
+        }).then(resultado => {
+
+            if (resultado.isConfirmed) {
+
+                document
+                    .getElementById('login-anchor')
+                    .scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+
+                setTimeout(() => {
+                    document
+                        .getElementById('login-email')
+                        ?.focus();
+                }, 600);
+            }
+        });
+
+        return;
+    }
+
     sessionStorage.setItem('estacionSeleccionada', estacionId);
     window.location.href = `alquiler.html?estacionId=${estacionId}`;
 }

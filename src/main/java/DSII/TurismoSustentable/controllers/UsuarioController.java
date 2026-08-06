@@ -4,7 +4,6 @@ import DSII.TurismoSustentable.dto.UsuarioDTO;
 import DSII.TurismoSustentable.models.Rol;
 import DSII.TurismoSustentable.models.Usuario;
 import DSII.TurismoSustentable.repositories.UsuarioRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -12,6 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.dao.DataIntegrityViolationException;
 import java.security.Principal;
+import DSII.TurismoSustentable.services.CorreoService;
 
 import javax.validation.Valid;
 import java.util.List;
@@ -21,14 +21,19 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api")
 public class UsuarioController {
-    @Autowired
-    private UsuarioRepository usuarioRepository;
-    private final PasswordEncoder passwordEncoder;
 
-    // Constructor para inyección de dependencias
-    public UsuarioController(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder) {
+    private final UsuarioRepository usuarioRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final CorreoService correoService;
+
+    public UsuarioController(
+            UsuarioRepository usuarioRepository,
+            PasswordEncoder passwordEncoder,
+            CorreoService correoService
+    ) {
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
+        this.correoService = correoService;
     }
 
     @GetMapping("/usuarios")
@@ -105,6 +110,11 @@ public class UsuarioController {
              */
             Usuario nuevoUsuario =
                     usuarioRepository.saveAndFlush(usuario);
+
+            correoService.enviarBienvenida(
+                    nuevoUsuario.getEmail(),
+                    nuevoUsuario.getNombre()
+            );
 
             return new ResponseEntity<>(
                     new UsuarioDTO(nuevoUsuario),

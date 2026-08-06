@@ -37,6 +37,9 @@ public class AlquilerService {
     @Autowired
     private EstacionRepository estacionRepository;
 
+    @Autowired
+    private CorreoService correoService;
+
     private static final BigDecimal SEGUNDOS_EN_HORA =
             new BigDecimal("3600");
 
@@ -164,7 +167,7 @@ public class AlquilerService {
 
         // 9. Guardar alquiler
         Alquiler alquilerGuardado = alquilerRepository.save(nuevoAlquiler);
-
+        correoService.enviarComprobanteInicio(alquilerGuardado);
         return new AlquilerDTO(alquilerGuardado);
     }
 
@@ -328,9 +331,8 @@ public class AlquilerService {
         bicicletaRepository.save(bicicleta);
 
         // 12. Guardar alquiler finalizado
-        Alquiler alquilerFinalizado =
-                alquilerRepository.save(alquiler);
-
+        Alquiler alquilerFinalizado = alquilerRepository.save(alquiler);
+        correoService.enviarComprobanteFinalizacion(alquilerFinalizado);
         return new AlquilerDTO(alquilerFinalizado);
     }
 

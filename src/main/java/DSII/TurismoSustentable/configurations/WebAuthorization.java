@@ -29,6 +29,8 @@ public class WebAuthorization {
                         "/",
                         "/index.html",
                         "/registro.html",
+                        "/recuperar-password.html",
+                        "/restablecer-password.html",
                         "/css/**",
                         "/js/**",
                         "/img/**",
@@ -40,7 +42,9 @@ public class WebAuthorization {
                         HttpMethod.POST,
                         "/api/usuarios",
                         "/api/login",
-                        "/api/logout"
+                        "/api/logout",
+                        "/api/password/solicitar",
+                        "/api/password/restablecer"
                 ).permitAll()
 
                 // El mapa público necesita consultar las estaciones

@@ -120,3 +120,27 @@ body.modal-open .fixed-top {
     display: inline-block;
     min-width: 90px;
 }
+
+/* Navegación del index en celulares y tablets */
+@media (max-width: 991.98px) {
+
+    #navbarNav .navbar-nav {
+        align-items: stretch !important;
+        gap: 0.5rem;
+        padding: 0.75rem 0;
+    }
+
+    #navbarNav .nav-item {
+        width: 100%;
+        margin-left: 0 !important;
+    }
+
+    #navbarNav .nav-link {
+        text-align: center;
+    }
+
+    #navbarNav .btn {
+        display: block;
+        width: 100%;
+    }
+}
