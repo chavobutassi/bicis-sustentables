@@ -91,6 +91,13 @@ public class CorreoService {
         mensaje.put("Subject", asunto);
         mensaje.put("HTMLPart", contenidoHtml);
 
+        /*
+         * Los correos transaccionales no necesitan seguimiento.
+         * Evita que Mailjet reescriba enlaces de recuperación.
+         */
+        mensaje.put("TrackClicks", "disabled");
+        mensaje.put("TrackOpens", "disabled");
+
         Map<String, Object> cuerpo = new HashMap<>();
         cuerpo.put(
                 "Messages",
