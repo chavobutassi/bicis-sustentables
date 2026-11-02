@@ -1,9 +1,11 @@
 package DSII.TurismoSustentable.dto;
 
+import DSII.TurismoSustentable.models.Persona;
 import DSII.TurismoSustentable.models.Tarjeta;
 import DSII.TurismoSustentable.models.Usuario;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public class UsuarioDTO {
@@ -12,7 +14,8 @@ public class UsuarioDTO {
     private String nombre;
     private String apellido;
     private String email;
-    private LocalDate fechaRegistro;
+    private String nickname;
+    private LocalDateTime fechaRegistro;
     private boolean activo;
     private String genero;
     private String rol;
@@ -22,20 +25,25 @@ public class UsuarioDTO {
     private List<TarjetaDTO> tarjetas;
 
     // Constructor
-    public UsuarioDTO (Usuario usuario) {
+    public UsuarioDTO(Usuario usuario) {
+        Persona persona = usuario.getPersona();
+
+        if (persona == null) {
+            throw new IllegalStateException(
+                    "El usuario no tiene una persona asociada."
+            );
+        }
+
         this.id = usuario.getId();
-        this.nombre = usuario.getNombre();
-        this.apellido = usuario.getApellido();
         this.email = usuario.getEmail();
+        this.nickname = usuario.getNickname();
         this.fechaRegistro = usuario.getFechaRegistro();
         this.activo = usuario.isActivo();
 
-        // --- 2. CAMBIO EN GENERO ---
-        // Enviamos el valor ENUM original (ej: "NO_BINARIO")
-        // en lugar del texto formateado ("No binario").
-        // Esto es necesario para que el <select> del admin panel funcione.
-        this.genero = usuario.getGenero().name();
-        this.fechaNacimiento = usuario.getFechaNacimiento(); // <-- 3. ASIGNACIÓN AGREGADA
+        this.nombre = persona.getNombre();
+        this.apellido = persona.getApellido();
+        this.fechaNacimiento = persona.getFechaNacimiento();
+        this.genero = persona.getGenero().getCodigo();
 
         if (usuario.getRol() != null) {
             this.rol = usuario.getRol().name();
@@ -50,8 +58,14 @@ public class UsuarioDTO {
     public String getNombre() { return nombre; }
     public String getApellido() { return apellido; }
 
+    public String getNickname() {
+        return nickname;
+    }
+
     public String getEmail() { return email; }
-    public LocalDate getFechaRegistro() { return fechaRegistro; }
+    public LocalDateTime getFechaRegistro() {
+        return fechaRegistro;
+    }
     public boolean isActivo() { return activo; }
     public String getGenero() { return genero; }
     public String getRol() { return rol; }
@@ -61,11 +75,4 @@ public class UsuarioDTO {
     public List<AlquilerDTO> getAlquileres() { return alquileres; }
     public List<TarjetaDTO> getTarjetas() { return tarjetas; }
 
-
-    // (La función formatEnumText ya no se usa aquí, pero no molesta)
-    /*private String formatEnumText(String text) {
-        if (text == null || text.isEmpty()) return "";
-        String result = text.replace("_", " ").toLowerCase();
-        return result.substring(0, 1).toUpperCase() + result.substring(1);
-    }*/
 }

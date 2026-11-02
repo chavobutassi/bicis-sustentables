@@ -24,4 +24,13 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
             String tokenRecuperacion
     );
 
+    Optional<Usuario> findByNicknameIgnoreCase(String nickname);
+
+    boolean existsByNicknameIgnoreCase(String nickname);
+
+    boolean existsByNicknameIgnoreCaseAndIdNot(
+            String nickname,
+            Integer id
+    );
+
 }

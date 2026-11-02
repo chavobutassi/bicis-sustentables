@@ -2,6 +2,7 @@ package DSII.TurismoSustentable.models;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.GenericGenerator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import javax.persistence.*;
 import javax.validation.constraints.*;
@@ -27,6 +28,19 @@ public class    Usuario {
             unique = true
     )
     private Persona persona;
+
+    @NotBlank(message = "El nickname es obligatorio.")
+    @Size(
+            min = 3,
+            max = 30,
+            message = "El nickname debe tener entre 3 y 30 caracteres."
+    )
+    @Pattern(
+            regexp = "^$|^[a-z][a-z0-9._-]*$",
+            message = "El nickname debe comenzar con una letra de a a z y solo puede contener letras, números, punto, guion y guion bajo."
+    )
+    @Column(name = "nickname", nullable = false, unique = true, length = 30)
+    private String nickname;
 
     @NotBlank(message = "El nombre no puede estar vacío.")
     @Size(max = 50, message = "El nombre no puede superar los 50 caracteres.")
@@ -90,9 +104,20 @@ public class    Usuario {
     private Rol rol = Rol.CLIENTE; // Valor por defecto: CLIENTE
     // ----------------------------
 
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     @CreationTimestamp
-    private LocalDate fechaRegistro;
+    @Column(
+            name = "fecha_registro",
+            nullable = false,
+            updatable = false
+    )
+    private LocalDateTime fechaRegistro;
     private boolean activo = true;
+
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    @Version
+    @Column(name = "version", nullable = false)
+    private Integer version;
 
     @Column(
             name = "token_recuperacion",
@@ -122,7 +147,6 @@ public class    Usuario {
         this.password = password;
         this.fechaNacimiento = fechaNacimiento;
         this.genero = genero;
-        this.fechaRegistro = LocalDate.now();
         this.activo = true;
         this.rol = rol; // Asignación del rol
         this.alquileres = new HashSet<>();
@@ -137,8 +161,9 @@ public class    Usuario {
     // Metodo para normalizar mail
     @PrePersist
     @PreUpdate
-    private void normalizarEmailAntesDeGuardar() {
+    private void normalizarIdentificadoresAntesDeGuardar() {
         setEmail(this.email);
+        setNickname(this.nickname);
     }
 
     // Metodo para añadir un Alquiler
@@ -164,6 +189,20 @@ public class    Usuario {
 
     public void setPersona(Persona persona) {
         this.persona = persona;
+    }
+
+    public String getNickname() {
+        return nickname;
+    }
+
+    public void setNickname(String nickname) {
+        this.nickname = nickname == null
+                ? null
+                : nickname.trim().toLowerCase(Locale.ROOT);
+    }
+
+    public Integer getVersion() {
+        return version;
     }
 
     public Rol getRol() {
@@ -242,11 +281,11 @@ public class    Usuario {
         this.genero = genero;
     }
 
-    public LocalDate getFechaRegistro() {
+    public LocalDateTime getFechaRegistro() {
         return fechaRegistro;
     }
 
-    public void setFechaRegistro(LocalDate fechaRegistro) {
+    public void setFechaRegistro(LocalDateTime fechaRegistro) {
         this.fechaRegistro = fechaRegistro;
     }
 
