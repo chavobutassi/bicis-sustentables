@@ -1,0 +1,415 @@
+%% DER v5 de trabajo - actualizado el 2 de noviembre de 2026.
+%% Base: DERv4.txt original de 21 entidades y reglas aprobadas RN-*.
+%% Modelo logico de 29 entidades; trazabilidad RN-TRZ-01 incorporada con aprobacion.
+%% No es SQL ni esquema fisico definitivo; los demas pendientes se conservan.
+%% Los comentarios de atributos indican nulabilidad o decisiones pendientes.
+%% Situacion financiera y espacios libres son calculados; no tablas nuevas.
+%% UQ_PERSONA_DOCUMENTO = UNIQUE(tipo_documento_id, pais_emisor_id, numero_documento).
+%% Es una sola clave compuesta; sus tres columnas no son UK individuales.
+%% El numero se normaliza antes de aplicar esa unicidad; no se convierte a entero.
+%% UQ_ALQUILER_BICICLETA = UNIQUE(alquiler_id, bicicleta_id) en ALQUILER_DETALLE.
+%% Una sola clave compuesta; alquiler_id y bicicleta_id no son UK individuales.
+%% RN-ALQ-10: segundos completos del intervalo; descartar fraccion final; sin minimo de uso.
+%% USD = HALF_UP_2(P*S/3600); ARS = HALF_UP_2(P*S*C/3600), sin convertir USD redondeado.
+%% Los totales son sumas de subtotales ya redondeados por detalle y moneda.
+%% RN-ALQ-11: un origen por cabecera; seleccion de 1 a 10 unidades al confirmar.
+%% Maximo configurable en servidor; seleccion fija, con cancelaciones aprobadas permitidas.
+%% RN-PAG-03: cancelar durante un pago enviado no modifica su importe; conciliar resultado.
+%% RN-PAG-05: Checkout Pro externo; sin perfiles ni tarjetas guardadas en este modelo.
+%% Decision 2026-11-02: AUDITORIA_SISTEMA exclusiva de acciones administrativas ADMIN.
+%% Los historiales de dominio conservan sus actores humanos y procesos SISTEMA.
+%% RN-TRZ-01: HISTORIAL_INCIDENCIA y ampliacion/renombre del historial de orden.
+%% Historial de orden/incidencia: estados solo al crear o transicionar; ambos nulos en evento de datos.
+%% incidencia_corte_id es FK opcional y unica; la incidencia debe pertenecer al mismo detalle.
+%% El ciclo detalle/incidencia se inicia con incidencia_corte_id nulo; se completa al validar el corte.
+erDiagram
+    PERSONA ||..|| USUARIO : posee_cuenta
+    GENERO ||..o{ PERSONA : identifica
+    TIPO_DOCUMENTO ||..o{ PERSONA : tipo_de_identificacion
+    PAIS ||..o{ PERSONA : pais_emisor_documento
+    USUARIO ||--|{ USUARIO_ROL : tiene
+    ROL ||--o{ USUARIO_ROL : asigna
+
+    ESTACION |o..o{ BICICLETA : ubicacion_fisica_actual
+    TIPO_BICICLETA ||..o{ BICICLETA : clasifica
+    ESTADO_BICICLETA ||..o{ BICICLETA : estado_actual
+
+    USUARIO ||..o{ ALQUILER : contrata
+    ESTADO_ALQUILER ||..o{ ALQUILER : estado_operativo
+    ALQUILER ||..|{ ALQUILER_DETALLE : contiene
+    BICICLETA ||..o{ ALQUILER_DETALLE : unidad_contratada
+    TIPO_BICICLETA ||..o{ ALQUILER_DETALLE : tipo_contratado
+    ESTADO_ALQUILER_DETALLE ||..o{ ALQUILER_DETALLE : estado_de_uso
+    ESTACION ||..o{ ALQUILER : retiro_contratado
+    ESTACION |o..o{ ALQUILER_DETALLE : devolucion_real
+    USUARIO |o..o{ ALQUILER_DETALLE : autor_reporte_de_falla
+
+    ALQUILER ||..o{ PAGO : intentos_y_cobros
+    ESTADO_PAGO ||..o{ PAGO : resultado_del_intento
+    PAGO ||..o{ REEMBOLSO : devuelve_dinero_del_pago
+
+    BICICLETA ||..o{ ORDEN_MANTENIMIENTO : recibe_trabajo
+    TIPO_MANTENIMIENTO ||..o{ ORDEN_MANTENIMIENTO : motivo_del_trabajo
+    ESTADO_ORDEN_MANTENIMIENTO ||..o{ ORDEN_MANTENIMIENTO : avance
+    USUARIO |o..o{ ORDEN_MANTENIMIENTO : tecnico_asignado
+    ORDEN_MANTENIMIENTO |o..o{ ALQUILER_DETALLE : atiende_falla_de_devolucion
+
+    ALQUILER_DETALLE ||..o{ INCIDENCIA : reportes_durante_el_viaje
+    INCIDENCIA |o..o| ALQUILER_DETALLE : fundamenta_corte
+    USUARIO ||..o{ INCIDENCIA : registra_reporte
+    USUARIO |o..o{ INCIDENCIA : informante_identificado
+    USUARIO |o..o{ INCIDENCIA : resuelve_como_admin
+    ORDEN_MANTENIMIENTO |o..o{ INCIDENCIA : atiende_revision
+    ESTACION |o..o{ INCIDENCIA : recepcion_fisica_posterior
+    USUARIO |o..o{ INCIDENCIA : registra_recepcion
+
+    INCIDENCIA ||..|{ HISTORIAL_INCIDENCIA : conserva_eventos
+    USUARIO |o..o{ HISTORIAL_INCIDENCIA : actor_humano
+
+    ALQUILER_DETALLE ||..|{ HISTORIAL_ESTADO_DETALLE : conserva_estados
+    ESTADO_ALQUILER_DETALLE |o..o{ HISTORIAL_ESTADO_DETALLE : estado_anterior
+    ESTADO_ALQUILER_DETALLE ||..o{ HISTORIAL_ESTADO_DETALLE : estado_nuevo
+    USUARIO |o..o{ HISTORIAL_ESTADO_DETALLE : actor_humano
+
+    BICICLETA ||..|{ HISTORIAL_ESTADO_BICICLETA : conserva_estados
+    ESTADO_BICICLETA |o..o{ HISTORIAL_ESTADO_BICICLETA : estado_anterior
+    ESTADO_BICICLETA ||..o{ HISTORIAL_ESTADO_BICICLETA : estado_nuevo
+    USUARIO |o..o{ HISTORIAL_ESTADO_BICICLETA : actor_humano
+
+    ORDEN_MANTENIMIENTO ||..|{ HISTORIAL_ORDEN_MANTENIMIENTO : conserva_eventos
+    ESTADO_ORDEN_MANTENIMIENTO |o..o{ HISTORIAL_ORDEN_MANTENIMIENTO : estado_anterior
+    ESTADO_ORDEN_MANTENIMIENTO |o..o{ HISTORIAL_ORDEN_MANTENIMIENTO : estado_nuevo
+    USUARIO |o..o{ HISTORIAL_ORDEN_MANTENIMIENTO : actor_humano
+
+    PAGO ||..|{ HISTORIAL_ESTADO_PAGO : conserva_estados
+    ESTADO_PAGO |o..o{ HISTORIAL_ESTADO_PAGO : estado_anterior
+    ESTADO_PAGO ||..o{ HISTORIAL_ESTADO_PAGO : estado_nuevo
+    USUARIO |o..o{ HISTORIAL_ESTADO_PAGO : actor_humano
+
+    REEMBOLSO ||..|{ HISTORIAL_ESTADO_REEMBOLSO : conserva_estados
+    USUARIO |o..o{ HISTORIAL_ESTADO_REEMBOLSO : actor_humano
+    USUARIO ||..o{ AUDITORIA_SISTEMA : actua_como_admin
+
+    PERSONA {
+        int id PK
+        int tipo_documento_id FK "Obligatorio al registrarse; parte de UQ_PERSONA_DOCUMENTO"
+        string numero_documento "Obligatorio; normalizado; parte de UQ_PERSONA_DOCUMENTO"
+        int pais_emisor_id FK "Obligatorio; parte de UQ_PERSONA_DOCUMENTO"
+        string nombre
+        string apellido
+        date fecha_nacimiento
+        int genero_id FK
+    }
+
+    GENERO {
+        int id PK
+        string codigo UK
+    }
+
+    TIPO_DOCUMENTO {
+        int id PK
+        string codigo UK "Obligatorio; DNI o PASAPORTE"
+        string nombre "Obligatorio"
+    }
+
+    PAIS {
+        int id PK
+        string codigo UK "Obligatorio; codigo de pais normalizado"
+        string nombre "Obligatorio"
+    }
+
+    USUARIO {
+        int id PK
+        int persona_id FK, UK
+        string email UK "Obligatorio; normalizado; unicidad independiente del nickname"
+        string nickname UK "Obligatorio; normalizado; inicio de sesion con contrasena"
+        string password_hash "Conservar autenticacion y hash actuales"
+        boolean activo
+        datetime fecha_registro
+        string token_recuperacion_hash UK "Opcional; no guardar el enlace secreto"
+        datetime vencimiento_token_recuperacion "Opcional"
+        int version "Control de concurrencia propuesto"
+    }
+
+    ROL {
+        int id PK
+        string codigo UK
+    }
+
+    USUARIO_ROL {
+        int usuario_id PK, FK
+        int rol_id PK, FK
+    }
+
+    ESTACION {
+        int id PK
+        string nombre UK
+        string direccion
+        int capacidad
+        boolean borrado_estacion "Baja logica exclusivamente; conservar fila y referencias historicas"
+        decimal latitud
+        decimal longitud
+        int version
+    }
+
+    TIPO_BICICLETA {
+        int id PK
+        string codigo UK
+        decimal precio_por_hora_usd "Tarifa por tipo confirmada por el usuario"
+        int intervalo_preventivo_meses "Positivo; valores iniciales pendientes"
+    }
+
+    ESTADO_BICICLETA {
+        int id PK
+        string codigo UK
+    }
+
+    ESTADO_ALQUILER {
+        int id PK
+        string codigo UK
+    }
+
+    ESTADO_ALQUILER_DETALLE {
+        int id PK
+        string codigo UK
+    }
+
+    ESTADO_ORDEN_MANTENIMIENTO {
+        int id PK
+        string codigo UK
+    }
+
+    ESTADO_PAGO {
+        int id PK
+        string codigo UK
+    }
+
+    BICICLETA {
+        int id PK
+        string codigo_bicicleta UK
+        int tipo_bicicleta_id FK
+        int estado_bicicleta_id FK
+        int estacion_id FK "Opcional; solo presencia fisica registrada"
+        date fecha_alta "Referencia inicial; no inventar fechas de legado"
+        int version
+    }
+
+    ORDEN_MANTENIMIENTO {
+        int id PK
+        int bicicleta_id FK
+        int tipo_mantenimiento_id FK
+        int estado_orden_mantenimiento_id FK
+        int tecnico_id FK "Opcional en CREADA; requerido para trabajar"
+        datetime fecha_creacion
+        datetime fecha_inicio "Opcional hasta iniciar"
+        datetime fecha_fin "Opcional hasta cierre"
+        string resultado_tecnico "APTA o NO_APTA al finalizar; codigos propuestos"
+        decimal costo_repuestos "Costo interno en ARS; no negativo cuando se conoce; no cargo al cliente"
+        string moneda_repuestos "ARS; explicita cuando se registra un importe"
+        text diagnostico "Opcional durante evaluacion; obligatorio en FINALIZADA"
+        text descripcion_trabajo
+        text observaciones
+        text motivo_pausa_cancelacion "Condicional segun transicion"
+        int version
+    }
+
+    ALQUILER {
+        int id PK
+        int usuario_id FK
+        int estado_alquiler_id FK
+        int estacion_retiro_id FK "Obligatoria; origen comun contratado; no implica retiro realizado"
+        datetime fecha_hora_creacion "Confirmacion de contratacion; no carrito previo"
+        datetime fecha_hora_vencimiento_reserva "Original: creacion mas 15 minutos"
+        datetime fecha_hora_cierre "Opcional; cierre operativo del conjunto"
+        datetime fecha_hora_cancelacion "Opcional"
+        datetime fecha_hora_liquidacion "Opcional; no basta cerrar el uso"
+        decimal cotizacion_ars_por_usd "Congelada antes de pagar"
+        string fuente_cotizacion
+        datetime fecha_hora_aplicacion_cotizacion
+        datetime fecha_hora_actualizacion_fuente "Opcional si el proveedor no la informa"
+        decimal costo_estimado_usd "2 decimales; suma de subtotales USD de referencia"
+        decimal costo_estimado_ars "2 decimales; suma de subtotales ARS"
+        decimal costo_final_usd "Opcional hasta liquidar; suma de subtotales USD; 2 decimales"
+        decimal costo_final_ars "Opcional hasta liquidar; suma de subtotales ARS; 2 decimales"
+        boolean borrado_alquiler "Legado; nunca excluye deuda ni trazabilidad"
+        int version
+    }
+
+    ALQUILER_DETALLE {
+        int id PK
+        int alquiler_id FK "Parte de UQ_ALQUILER_BICICLETA"
+        int bicicleta_id FK "Parte de UQ_ALQUILER_BICICLETA"
+        int tipo_bicicleta_contratado_id FK "Obligatorio; tipo al confirmar; no cambia con reclasificacion"
+        int estado_alquiler_detalle_id FK
+        int estacion_devolucion_id FK "Opcional hasta recepcion normal"
+        int orden_mantenimiento_id FK "Opcional; enlace operativo del reporte"
+        int incidencia_corte_id FK, UK "Opcional; INCIDENCIA del mismo detalle que fundamenta el corte aplicado"
+        decimal precio_por_hora_aplicado_usd "Snapshot de la tarifa del tipo al confirmar"
+        int duracion_estimada_segundos "Segundos completos; referencia de anticipo, no minimo de uso"
+        datetime fecha_hora_retiro "Opcional hasta retiro real"
+        datetime fecha_hora_devolucion_estimada "Opcional hasta retiro"
+        datetime fecha_hora_devolucion_real "Opcional; nunca inventada por cierre excepcional"
+        datetime fecha_hora_fin_uso "Opcional hasta validar importe; recepcion detiene el contador"
+        datetime fecha_hora_cierre_detalle "Momento de la transicion terminal"
+        decimal subtotal_estimado_usd "Referencia USD; 2 decimales; HALF_UP por detalle"
+        decimal subtotal_estimado_ars "2 decimales; HALF_UP por detalle; no desde USD redondeado"
+        decimal subtotal_real_usd "Opcional hasta validar; referencia USD; 2 decimales; HALF_UP"
+        decimal subtotal_real_ars "Opcional hasta validar; 2 decimales; HALF_UP; no desde USD redondeado"
+        boolean falla_reportada
+        text descripcion_falla "Opcional hasta reporte de devolucion"
+        datetime fecha_reporte_falla "Opcional"
+        int reportado_por_id FK "Opcional; actor real del reporte"
+        string origen_cierre "CLIENTE, ADMIN o SISTEMA; codigos propuestos"
+        text motivo_cierre "Condicional; no sustituye el historial"
+        int version
+    }
+
+    HISTORIAL_ESTADO_DETALLE {
+        int id PK
+        int alquiler_detalle_id FK
+        int estado_anterior_id FK "Opcional solo para el estado inicial"
+        int estado_nuevo_id FK
+        datetime fecha_hora_cambio
+        int actor_usuario_id FK "Opcional solo para origen SISTEMA"
+        string origen "USUARIO o SISTEMA; no administrador ficticio"
+        text observaciones
+    }
+
+    HISTORIAL_ESTADO_BICICLETA {
+        int id PK
+        int bicicleta_id FK
+        int estado_anterior_id FK "Opcional solo para el estado inicial"
+        int estado_nuevo_id FK
+        datetime fecha_hora_cambio
+        int actor_usuario_id FK "Opcional solo para origen SISTEMA"
+        string origen
+        text observaciones
+    }
+
+    HISTORIAL_ORDEN_MANTENIMIENTO {
+        int id PK
+        int orden_mantenimiento_id FK
+        string accion "Obligatoria; codigo de evento validado por backend"
+        int estado_anterior_id FK "Nulo al crear o en evento solo de datos; obligatorio al transicionar"
+        int estado_nuevo_id FK "Obligatorio al crear o transicionar; nulo en evento solo de datos"
+        datetime fecha_hora_cambio
+        int actor_usuario_id FK "Opcional solo para origen SISTEMA"
+        string origen "USUARIO o SISTEMA; actor real segun operacion"
+        text observaciones "Motivo y contexto; obligatorio cuando la operacion lo requiere"
+        text valores_anteriores "Datos permitidos previos; nulo al crear; no secretos"
+        text valores_nuevos "Datos permitidos registrados o modificados; formato estructurado validado"
+    }
+
+    HISTORIAL_ESTADO_PAGO {
+        int id PK
+        int pago_id FK
+        int estado_anterior_id FK "Opcional solo para el estado inicial"
+        int estado_nuevo_id FK
+        datetime fecha_hora_cambio "Registro en el backend; no reloj del cliente"
+        datetime fecha_hora_evento_externo "Opcional si la pasarela informa una fecha validada"
+        int actor_usuario_id FK "Opcional solo para origen SISTEMA"
+        string origen "USUARIO o SISTEMA"
+        string fuente "Registro local, notificacion o consulta validada"
+        string referencia_evento_externo "Opcional; unicidad segun producto y proveedor"
+        text observaciones "Motivo o detalle saneado; sin secretos"
+    }
+
+    HISTORIAL_ESTADO_REEMBOLSO {
+        int id PK
+        int reembolso_id FK
+        string estado_anterior "Opcional solo al crear; mismos cuatro codigos de REEMBOLSO"
+        string estado_nuevo "PENDIENTE, EN_PROCESO, CONFIRMADO o FALLIDO"
+        datetime fecha_hora_cambio "Registro en el backend; no reloj del cliente"
+        datetime fecha_hora_evento_externo "Opcional si la pasarela informa una fecha validada"
+        int actor_usuario_id FK "Opcional solo para origen SISTEMA"
+        string origen "USUARIO o SISTEMA"
+        string fuente "Registro local, notificacion o consulta validada"
+        string referencia_evento_externo "Opcional; unicidad segun producto y proveedor"
+        text observaciones "Motivo o detalle saneado; sin secretos"
+    }
+
+    AUDITORIA_SISTEMA {
+        int id PK
+        int administrador_id FK "Obligatorio; accion autorizada como ADMIN al ejecutarse"
+        string entidad_afectada
+        int entidad_id "Referencia contextual; no FK generica garantizada"
+        string accion
+        text valores_anteriores "Lista permitida; sin secretos"
+        text valores_nuevos "Lista permitida; sin secretos"
+        text motivo "Opcional en cambios rutinarios; obligatorio en acciones que requieren justificacion"
+        datetime fecha_operacion
+    }
+
+    PAGO {
+        int id PK
+        int alquiler_id FK
+        int estado_pago_id FK
+        string finalidad "ANTICIPO o ADICIONAL; codigos propuestos"
+        decimal monto_ars "Importe de la operacion en ARS; 2 decimales"
+        string moneda "ARS"
+        datetime fecha_creacion
+        datetime fecha_confirmacion "Opcional hasta validacion"
+        string plataforma "MERCADOPAGO; unica pasarela del alcance aprobado"
+        string entorno "PRUEBA o PRODUCCION; separar datos y credenciales al integrar"
+        string referencia_externa "Opcional; unicidad compuesta segun proveedor"
+        string clave_idempotencia UK "Un intento no se cobra dos veces al reenviarlo"
+        int version
+    }
+
+    TIPO_MANTENIMIENTO {
+        int id PK
+        string codigo UK "PREVENTIVO o CORRECTIVO"
+        string descripcion
+    }
+
+    REEMBOLSO {
+        int id PK
+        int pago_id FK "Solo devuelve un pago confirmado"
+        decimal monto_ars "Importe a devolver en ARS; 2 decimales"
+        string moneda "ARS"
+        string estado "PENDIENTE, EN_PROCESO, CONFIRMADO o FALLIDO"
+        datetime fecha_creacion
+        datetime fecha_confirmacion "Opcional"
+        text motivo
+        string referencia_externa "Opcional; unicidad segun proveedor"
+        string clave_idempotencia UK
+        int version
+    }
+
+    INCIDENCIA {
+        int id PK
+        int alquiler_detalle_id FK
+        int registrado_por_id FK
+        int informante_id FK "Opcional; puede diferir de quien carga el aviso"
+        int resuelto_por_id FK "Opcional hasta decision de ADMIN"
+        int orden_mantenimiento_id FK "Opcional; no duplica ordenes abiertas"
+        string tipo "AVERIA, ACCIDENTE, PERDIDA o ROBO; codigos propuestos"
+        string estado_revision "PENDIENTE, VALIDADA o DESCARTADA; codigos propuestos"
+        boolean requiere_revision_economica "Determinado por backend; no por cambio libre del cliente"
+        text descripcion
+        text lugar_reportado "Si se conoce; no GPS obligatorio"
+        datetime fecha_hora_hecho_informada
+        datetime fecha_hora_registro
+        datetime fecha_hora_decision "Opcional hasta resolver"
+        datetime fecha_hora_corte_validado "Opcional; no equivale a fecha de decision"
+        text motivo_decision "Requerido al resolver"
+        datetime fecha_hora_recepcion_fisica "Opcional; no reinicia el uso"
+        int estacion_recepcion_id FK "Opcional; solo si ingreso realmente a una estacion"
+        int recibido_por_id FK "Opcional hasta registrar recepcion"
+        text lugar_recepcion "Si la recepcion no fue en una estacion"
+        int version
+    }
+
+    HISTORIAL_INCIDENCIA {
+        int id PK
+        int incidencia_id FK "Obligatoria; una incidencia conserva muchos eventos; no UK"
+        string accion "Obligatoria; registro, revision, correccion permitida, vinculo o recepcion"
+        string estado_anterior "Mismos codigos de INCIDENCIA; nulo al crear o en evento solo de datos"
+        string estado_nuevo "Mismos codigos de INCIDENCIA; obligatorio al crear o transicionar; nulo en evento solo de datos"
+        datetime fecha_hora_cambio "Registro en backend; no fecha del hecho informado ni del corte"
+        int actor_usuario_id FK "Opcional solo para origen SISTEMA"
+        string origen "USUARIO o SISTEMA; no administrador ficticio"
+        text valores_anteriores "Datos permitidos previos; nulo al crear; no secretos"
+        text valores_nuevos "Datos permitidos registrados o modificados; formato estructurado validado"
+        text observaciones "Motivo y contexto; obligatorio cuando la operacion lo requiere"
+    }

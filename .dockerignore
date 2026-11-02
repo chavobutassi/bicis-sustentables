@@ -7,3 +7,10 @@ bin
 *.iml
 .env
 .env.*
+
+# Material auxiliar que no necesita la aplicación
+.local-artifacts
+docs
+tools
+__pycache__
+*.pyc

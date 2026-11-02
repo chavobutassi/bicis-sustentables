@@ -39,3 +39,12 @@ out/
 # Variables y secretos locales
 .env
 .env.*
+
+# Herramientas Python de documentación
+__pycache__/
+*.py[cod]
+
+# Respaldos locales y vistas previas generadas de documentos
+/.local-artifacts/
+/docs/practica-3/.render-check*/
+/docs/practica-3/.codex-write-test

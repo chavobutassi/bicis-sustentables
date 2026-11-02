@@ -1,0 +1,23 @@
+erDiagram
+    %% Fragmento de trabajo de RN-MAN-01, no es el DER completo.
+    %% Solo muestra la incorporacion del tipo y su separacion del estado.
+    %% Los demas atributos y relaciones de ORDEN_MANTENIMIENTO no se eliminan.
+    TIPO_MANTENIMIENTO ||--o{ ORDEN_MANTENIMIENTO : "clasifica"
+    ESTADO_ORDEN_MANTENIMIENTO ||--o{ ORDEN_MANTENIMIENTO : "estado_actual"
+
+    TIPO_MANTENIMIENTO {
+        int id PK
+        string codigo UK
+        string descripcion
+    }
+
+    ESTADO_ORDEN_MANTENIMIENTO {
+        int id PK
+        string codigo UK
+    }
+
+    ORDEN_MANTENIMIENTO {
+        int id PK
+        int tipo_mantenimiento_id FK
+        int estado_orden_mantenimiento_id FK
+    }
