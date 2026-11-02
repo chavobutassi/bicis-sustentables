@@ -7,7 +7,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
-
+import org.springframework.context.annotation.Profile;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -29,6 +29,7 @@ public class TurismoSustentableApplication {
 
 	// CommandLineRunner para ejecutar codigo al inicio
 	@Bean
+	@Profile("!refactor")
 	public CommandLineRunner initData(EstacionRepository estacionRepository,
 									  UsuarioRepository usuarioRepository,
 									  BicicletaRepository bicicletaRepository,
