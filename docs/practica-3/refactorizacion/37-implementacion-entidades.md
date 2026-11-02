@@ -434,3 +434,279 @@ todavía pendientes. La revisión no modificó archivos Java.
 - No se habilita el registro HTTP ni se cambia el login. El mapeo
   de las relaciones LAZY deberá realizarse dentro del futuro servicio
   transaccional; las pruebas unitarias propuestas no lo garantizan.
+
+### Etapa 8 Lecturas personales en correos y estadísticas
+
+Estado: cambios incorporados manualmente y revisados estáticamente
+el 2 de noviembre de 2026; compilación y doce pruebas de DTO superadas.
+Pendientes las pruebas funcionales de correos, recuperación y JPQL.
+Punto de partida: commit 665b603, que coincide
+con el push informado por el desarrollador y la referencia local de
+su rama remota. El árbol de trabajo estaba limpio al iniciar la revisión.
+
+- Se cambiaron cuatro expresiones de CorreoService desde
+  alquiler.getUsuario().getNombre() a
+  alquiler.getUsuario().getPersona().getNombre(): dos en el comprobante
+  de inicio y dos en el de finalización, incluidos el HTML y el nombre
+  del destinatario. Se conservaron el escape HTML, los importes y el envío.
+- La solicitud de recuperación en RecuperacionPasswordService y
+  la bienvenida en UsuarioController toman también el nombre desde
+  Persona. Email, token, expiración y validación de contraseña no se
+  cambiaron en esta etapa; no se ejecutaron envíos reales en la revisión.
+- En AlquilerRepository, contarPreferenciasBicicletaPorGenero pasó
+  de a.usuario.genero a a.usuario.persona.genero.codigo en SELECT,
+  GROUP BY y ORDER BY. El segundo elemento de cada fila será el código
+  String del catálogo, no la entidad Genero ni el enum anterior.
+- Se conservaron la firma del método y el filtro de alquileres FINALIZADO,
+  sin modificar conteos ni consultas restantes. El controlador estadístico
+  actual devuelve las filas sin convertir ese valor a GeneroUsuario.
+- No se cambiaron los nombres de estaciones, países o tipos documentales.
+  La separación de Persona no afecta esos getNombre.
+- Los setters personales del controlador de usuarios, sus DTO de entrada,
+  constructores y carga inicial anteriores siguen pendientes. No se
+  eliminarán todavía atributos ni métodos personales de Usuario.
+- La lectura de relaciones LAZY en los servicios deberá quedar cubierta
+  por la adaptación transaccional y de consultas de las próximas etapas.
+  Los dos métodos de alquiler actuales ya son transaccionales; este paso
+  no declara resuelta la recuperación fuera de un contexto de persistencia,
+  la entrega de correos después del commit ni la nueva estadística por detalle.
+- Se revisó el diff de los cuatro archivos Java y se confirmó que
+  coincide con las seis sustituciones y la consulta propuestas. No se
+  detectaron errores de copiado ni cambios adicionales en esos archivos.
+  git diff --check no informó problemas de espacios.
+- El desarrollador aportó BUILD SUCCESSFUL en 2 segundos ejecutando
+  únicamente UsuarioDTOTest y RegistroUsuarioDTOTest. Se contrastaron
+  ambos XML: 10 pruebas de registro y 2 de salida, sin fallos, errores
+  ni omitidas. Timestamps: 2026-11-02T15:54:27.143Z y
+  2026-11-02T15:54:27.385Z, respectivamente (12:54:27 en Buenos Aires).
+- Esas doce pruebas no ejecutan CorreoService, recuperación ni JPQL.
+  La consulta y las asociaciones requieren pruebas de integración aisladas.
+  No se arrancó la aplicación ni se conectó a la base anterior durante
+  esta revisión. No se modificó Java ni se realizaron operaciones Git
+  de escritura; solo se actualizó este registro de implementación.
+
+### Etapa 9 DTO de entrada para modificar datos de usuario
+
+Estado: ActualizarUsuarioDTO incorporado manualmente y revisado el
+2 de noviembre de 2026. Compila y las doce pruebas anteriores siguen
+pasando; no se presentan como pruebas específicas de este DTO.
+
+- El formulario administrativo actual envía nombre, apellido, email,
+  fechaNacimiento y genero como código del enum anterior. No envía
+  contraseña, roles, estado de cuenta, nickname ni documento.
+- Se creó ActualizarUsuarioDTO en el paquete dto, separado tanto
+  de UsuarioDTO de salida como de RegistroUsuarioDTO de registro.
+  Tiene nombre, apellido, email, fechaNacimiento y generoId.
+- La nueva operación PUT exigirá esos cinco campos completos. Es un
+  cambio explícito frente al método anterior que admitía campos omitidos;
+  no se presenta como un PATCH parcial. Todavía no se conecta el DTO al
+  endpoint, por lo que no se declara aplicado ese contrato HTTP.
+- Nombre y apellido son obligatorios, de hasta 50 caracteres y con
+  las reglas existentes de letras Unicode, espacios, apóstrofes y guiones.
+  Los setters recortan espacios externos, sin modificar espacios internos.
+- Email es obligatorio, de hasta 254 caracteres, con el mismo formato
+  y la misma regla de no comenzar con número ya implementados en registro.
+  El setter aplica trim y minúsculas con Locale.ROOT. La comprobación
+  de unicidad, incluyendo cuentas inactivas y exclusión del propio id,
+  corresponde al futuro servicio y a la restricción física, no al DTO.
+- Fecha de nacimiento es obligatoria y pasada. No se añade edad mínima.
+  generoId es un Integer obligatorio y positivo; el futuro servicio
+  comprobará que el catálogo contiene ese identificador.
+- No se admitirán mediante este DTO cambios de id, Persona vinculada,
+  documento, nickname, rol, activo, contraseña, fecha de registro,
+  versión ni token de recuperación. No se eliminan otros circuitos de
+  modificación o recuperación; se delimita esta edición de perfil.
+- No se tocará todavía admin.js: el envío actual de genero no equivale
+  a generoId. La adaptación del selector, el DTO de salida para disponer
+  de su identificador y la petición HTTP sigue pendiente. Al conectar
+  el nuevo PUT, un cuerpo sin generoId debe ser rechazado por validación,
+  no aceptado silenciosamente ignorando el cambio de género.
+- Se prepara primero el DTO para mantener el trabajo manual en pasos
+  acotados. Después se implementarán el servicio transaccional, su
+  tratamiento de duplicados y concurrencia y la delegación del controlador.
+  Los campos personales duplicados de Usuario aún no se retirarán.
+- Se revisó el archivo completo: paquete, cinco campos, anotaciones,
+  constructor, getters y setters coinciden con las instrucciones.
+  El desarrollador informó pruebas superadas y los XML confirman
+  diez pruebas en RegistroUsuarioDTOTest y dos en UsuarioDTOTest,
+  sin fallos, errores ni omitidas. Timestamps:
+  2026-11-02T16:07:21.469Z y 2026-11-02T16:07:21.744Z
+  (13:07:21 en Buenos Aires).
+- Esas doce pruebas no ejercitan ActualizarUsuarioDTO, sus errores
+  HTTP ni el futuro servicio; se requieren pruebas específicas antes
+  de dar por terminado el flujo de modificación.
+
+### Etapa 10 Servicio transaccional de modificación de usuario
+
+Estado: UsuarioService incorporado manualmente y revisado estáticamente
+el 2 de noviembre de 2026. Compilación y doce pruebas anteriores de DTO
+superadas; pendientes las pruebas específicas del servicio y de persistencia.
+
+- Se creó un servicio con inyección por constructor de
+  UsuarioRepository, GeneroRepository y EntityManager.
+- Su método actualizarUsuario recibe id y ActualizarUsuarioDTO,
+  devuelve UsuarioDTO y tiene Transactional, validación de método
+  mediante Validated/Valid y autorización PreAuthorize exclusiva ADMIN.
+  La configuración actual ya habilita prePostEnabled.
+- Se exige id positivo, DTO presente y sus validaciones. El usuario
+  debe existir, estar activo y tener Persona; no se inventarán datos
+  personales ni se reemplazará el vínculo para subsanar una cuenta incompleta.
+- El género se resuelve por findById del catálogo, no creando una fila
+  nueva con un id enviado por el cliente. Se comprueba el email con
+  existsByEmailIgnoreCaseAndIdNot incluyendo cuentas inactivas y
+  excluyendo la propia cuenta. La restricción UNIQUE sigue siendo
+  imprescindible frente a solicitudes concurrentes.
+- Solo se modifican email en Usuario y nombre, apellido,
+  fechaNacimiento y genero en Persona. No se copian de nuevo esos
+  datos a los atributos duplicados anteriores.
+- Si cambia el email, se limpian conjuntamente tokenRecuperacion
+  y vencimientoTokenRecuperacion. Es una medida de seguridad para
+  invalidar enlaces anteriores tras cambiar la dirección de recuperación;
+  el DTO no recibe ni permite elegir esos valores. No verifica la
+  titularidad del nuevo correo ni cambia el plazo de los enlaces nuevos.
+- Se solicita OPTIMISTIC_FORCE_INCREMENT sobre Usuario para que
+  el control de versión cubra también transacciones participantes que
+  solo modifican Persona. No se añadirá una columna version a Persona
+  ni se asignará manualmente Usuario.version. Esto no detecta por sí
+  solo formularios antiguos que no envían una versión esperada.
+- La Persona cargada dentro de la transacción es una entidad administrada:
+  sus cambios se persistirán por detección de cambios, sin cascade REMOVE,
+  sin reemplazarla y sin necesitar otro save sobre PersonaRepository.
+  Se hará flush antes de construir el DTO dentro de la misma transacción.
+- No se capturan errores de persistencia dentro del servicio para
+  simular éxito: se propagarán y se revertirá la unidad de trabajo.
+  Los conflictos pueden aparecer al hacer flush o al confirmar;
+  el futuro manejo HTTP deberá cubrir ambas situaciones.
+- La conexión del controlador, respuestas 400/404/409, auditoría ADMIN,
+  retirada de duplicados y coherencia de las sesiones ante cambio de
+  email siguen pendientes. El principal actual todavía utiliza email;
+  la futura autenticación por nickname debe adaptarse de forma coordinada.
+- Se revisó el archivo completo: inyección, anotaciones, búsquedas,
+  comprobaciones, control de versión, cambios en Persona, limpieza
+  conjunta del token y devolución del DTO coinciden con lo indicado.
+- El desarrollador informó pruebas superadas. Los dos XML confirman
+  10 pruebas de RegistroUsuarioDTOTest y 2 de UsuarioDTOTest,
+  sin fallos, errores ni omitidas. Timestamps:
+  2026-11-02T16:20:54.072Z y 2026-11-02T16:20:54.327Z
+  (13:20:54 en Buenos Aires).
+- Estas pruebas no acreditan la validación o seguridad por proxies,
+  el funcionamiento del servicio, su transacción o el bloqueo optimista.
+  Las pruebas específicas y la integración aislada se realizarán antes
+  de dar por terminado este flujo y de arrancar la aplicación.
+- Referencias técnicas consultadas el 2 de noviembre de 2026:
+  [Hibernate 5.6 LockMode](https://docs.hibernate.org/orm/5.6/javadocs/org/hibernate/LockMode.html)
+  y [JPA LockModeType](https://docs.oracle.com/javaee/7/api/javax/persistence/LockModeType.html).
+
+### Etapa 11 Conexión del PUT de usuarios con el servicio
+
+Estado: UsuarioController modificado manualmente y revisado el
+2 de noviembre de 2026. Compilación y doce pruebas anteriores de DTO
+superadas. Pendientes las pruebas específicas del PUT y del servicio.
+
+- Se inyectó UsuarioService por constructor, conservando las
+  tres dependencias anteriores porque otros métodos todavía las usan.
+- Se reemplazó únicamente actualizarUsuario: recibe
+  Valid RequestBody ActualizarUsuarioDTO y delega en el servicio.
+  Se retiraron de ese método las búsquedas, validaciones duplicadas,
+  cambios sobre atributos personales antiguos y modificación de contraseña.
+  GET, POST, DELETE y la recuperación de contraseña se conservaron.
+- El PUT nuevo requiere los cinco campos del DTO, incluido generoId.
+  La petición actual de admin.js todavía envía genero como texto:
+  el frontend sigue pendiente y no se considera compatible por este paso.
+- La validación del cuerpo previa a ejecutar el método sigue usando
+  el GlobalExceptionHandler existente. El controlador maneja localmente
+  ConstraintViolationException del servicio como 400, EntityNotFoundException
+  como 404, IllegalArgumentException como 400 e IllegalStateException como 409.
+- Los conflictos de versión, tanto JPA OptimisticLockException como
+  Spring OptimisticLockingFailureException, tienen prevista respuesta 409 con un mensaje
+  para recargar los datos. Los conflictos DataIntegrityViolationException
+  tienen prevista respuesta 409 sin exponer detalles SQL ni atribuir todos los errores
+  de integridad exclusivamente a un email duplicado.
+- El try del controlador cubre toda la llamada al proxy transaccional,
+  incluidos los errores propagados al confirmar antes de retornar al caller.
+  No se agregaron catch genéricos que conviertan fallos inesperados en 400.
+  La autorización ADMIN y las excepciones de acceso de Spring Security
+  no están incluidas en esas capturas.
+- Esta etapa no modifica GlobalExceptionHandler ni afirma unificar
+  todos los formatos de error de la API. Persisten pruebas específicas
+  de servicio, validación y HTTP, auditoría y retirada de duplicados.
+- Se revisaron el archivo completo y el diff: los seis imports nuevos,
+  el campo final, los cuatro parámetros del constructor y sus asignaciones,
+  la firma con Valid y el DTO de entrada, la delegación y las seis ramas
+  catch coinciden con las instrucciones. No quedaron un segundo método
+  PUT ni escrituras sobre los campos personales antiguos en ese método.
+  Se conservaron el cierre de la clase y los demás endpoints.
+- git diff --check no informó problemas. La clase compilada tiene
+  fecha posterior a la última modificación del archivo fuente.
+- El desarrollador informó pruebas superadas. Los XML confirman
+  10 pruebas en RegistroUsuarioDTOTest y 2 en UsuarioDTOTest,
+  sin fallos, errores ni omitidas. Timestamps:
+  2026-11-02T16:53:35.503Z y 2026-11-02T16:53:35.758Z
+  (13:53:35 en Buenos Aires).
+- Esas pruebas no prueban la ruta HTTP, seguridad por proxy,
+  commit/rollback ni las respuestas de error nuevas. La revisión
+  confirma el copiado y la compilación, no la integración completa.
+  No se arrancó la aplicación ni se conectó a la base anterior.
+  Solo se actualizó este MD; no se modificó Java ni se escribió en Git.
+
+### Etapa 12 Pruebas unitarias de modificación de usuario
+
+Estado: UsuarioServiceTest creado manualmente en src/test, revisado
+y ejecutado el 2 de noviembre de 2026. Diez pruebas nuevas superadas;
+22 en total junto a las dos suites anteriores, sin fallos ni errores.
+No se modificaron dependencias ni código productivo en esta etapa.
+
+- Se utilizaron JUnit 5 y MockitoExtension incluidos en el starter de
+  pruebas existente. UsuarioRepository, GeneroRepository y EntityManager
+  se simulan; UsuarioService se construye mediante InjectMocks.
+- Los fixtures son cuentas, personas, catálogos y DTO ficticios en
+  memoria. El valor de password será una cadena explícitamente simulada,
+  no una contraseña utilizable ni un hash BCrypt probado. Los tokens
+  son cadenas ficticias de 64 caracteres, no enlaces reales.
+- Se implementaron y superaron diez pruebas:
+  1. Actualiza Persona y devuelve sus datos conservando identidad del
+     vínculo, documento, nickname, rol, password y token si el email es igual;
+     solicita el control de versión y llama a flush.
+  2. Al cambiar el email, limpia conjuntamente hash del token y vencimiento.
+  3. Rechaza un usuario inexistente sin iniciar escrituras.
+  4. Rechaza un usuario inactivo sin iniciar escrituras.
+  5. Rechaza una cuenta sin Persona sin iniciar escrituras.
+  6. Rechaza un género no encontrado sin iniciar escrituras.
+  7. Rechaza un email ocupado sin cambiar datos ni iniciar escrituras.
+  8. Propaga un error de versión simulado al solicitar el lock, antes
+     de mutar datos; no es una carrera de base de datos ejecutada.
+  9. Propaga un conflicto de integridad simulado en flush; no afirma
+     revertir objetos Java ni probar un rollback real.
+  10. Valida explícitamente ActualizarUsuarioDTO con Bean Validation:
+      datos válidos, cinco campos obligatorios y datos inválidos para
+      cada uno (nombre, apellido, email, nacimiento futuro y género no positivo).
+- La primera prueba comprueba que la consulta de duplicados utiliza
+  el email normalizado y excluye el propio id. El resultado simulado
+  no prueba una restricción UNIQUE ni la existencia de filas reales.
+- La prueba con Mockito solo confirma la solicitud de
+  OPTIMISTIC_FORCE_INCREMENT, no que Hibernate incremente la versión.
+  Al invocar directamente el servicio construido en el test no actúan
+  los proxies de Transactional, PreAuthorize ni Validated. La décima
+  prueba ejecuta el validador explícitamente sobre el DTO, no el proxy.
+- Se revisó la clase completa, su ubicación y los tres XML de JUnit.
+  Los métodos, fixtures, mocks y verificaciones coinciden con lo indicado.
+  No se añadieron stubs globales que afecten a los casos de rechazo.
+  La clase compilada tiene fecha posterior a su archivo fuente y
+  git diff --check no informó problemas de espacios.
+- El desarrollador aportó BUILD SUCCESSFUL en 3 segundos ejecutando:
+
+```powershell
+.\gradlew.bat test --tests "UsuarioServiceTest" --tests "UsuarioDTOTest" --tests "RegistroUsuarioDTOTest"
+```
+
+- Los XML confirman 22 pruebas, 0 fallos, 0 errores y 0 omitidas:
+  RegistroUsuarioDTOTest, 10 pruebas (2026-11-02T17:05:02.340Z);
+  UsuarioDTOTest, 2 (2026-11-02T17:05:02.606Z);
+  UsuarioServiceTest, 10 (2026-11-02T17:05:02.624Z).
+  Las tres corresponden a las 14:05:02 de Buenos Aires.
+- No se ejecutó SpringBootTest ni test sin filtros. No se arrancó
+  la aplicación, se conectó a MySQL ni se enviaron correos en esta revisión.
+  Solo se actualizó este MD: no se modificó Java ni se escribió en Git.
+- Continúan pendientes pruebas HTTP de estados 400/404/409, seguridad
+  por proxy e integración con una base aislada, además de las adaptaciones
+  de frontend, auditoría, registro y retirada de campos duplicados.

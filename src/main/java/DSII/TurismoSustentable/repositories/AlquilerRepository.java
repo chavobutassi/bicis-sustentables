@@ -10,17 +10,17 @@ import java.util.List;
 public interface AlquilerRepository extends JpaRepository<Alquiler, Integer> {
 
     /**
-     * 1. PREFERENCIAS DE BICICLETA POR GÉNERO
-     * * Consulta que agrupa y cuenta los alquileres por el tipo de bicicleta (a.bicicleta.tipo)
-     * y el género del usuario (a.usuario.genero).
-     * * Resultado: List<Object[]> donde cada Object[] contiene [TipoBicicleta, String Genero, Long Cantidad].
+     * Agrupa alquileres finalizados por tipo de bicicleta
+     * y código de género de la persona.
+     *
+     * Cada fila contiene:
+     * [TipoBicicleta, String codigoGenero, Long cantidad].
      */
-    @Query("SELECT a.bicicleta.tipo, a.usuario.genero, COUNT(a.id) " +
+    @Query("SELECT a.bicicleta.tipo, a.usuario.persona.genero.codigo, COUNT(a.id) " +
             "FROM Alquiler a " +
-            // CORRECCIÓN: Usar el nombre completo del Enum para 'FINALIZADO'
             "WHERE a.estado = DSII.TurismoSustentable.models.EstadoAlquiler.FINALIZADO " +
-            "GROUP BY a.bicicleta.tipo, a.usuario.genero " +
-            "ORDER BY a.usuario.genero, COUNT(a.id) DESC")
+            "GROUP BY a.bicicleta.tipo, a.usuario.persona.genero.codigo " +
+            "ORDER BY a.usuario.persona.genero.codigo, COUNT(a.id) DESC")
     List<Object[]> contarPreferenciasBicicletaPorGenero();
 
     // ----------------------------------------------------------------------------------------------------

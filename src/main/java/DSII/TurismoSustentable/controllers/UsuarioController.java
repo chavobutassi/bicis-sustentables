@@ -12,6 +12,13 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.dao.DataIntegrityViolationException;
 import java.security.Principal;
 import DSII.TurismoSustentable.services.CorreoService;
+import DSII.TurismoSustentable.dto.ActualizarUsuarioDTO;
+import DSII.TurismoSustentable.services.UsuarioService;
+import org.springframework.dao.OptimisticLockingFailureException;
+
+import javax.persistence.EntityNotFoundException;
+import javax.persistence.OptimisticLockException;
+import javax.validation.ConstraintViolationException;
 
 import javax.validation.Valid;
 import java.util.List;
@@ -25,15 +32,18 @@ public class UsuarioController {
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
     private final CorreoService correoService;
+    private final UsuarioService usuarioService;
 
     public UsuarioController(
             UsuarioRepository usuarioRepository,
             PasswordEncoder passwordEncoder,
-            CorreoService correoService
+            CorreoService correoService,
+            UsuarioService usuarioService
     ) {
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
         this.correoService = correoService;
+        this.usuarioService = usuarioService;
     }
 
     @GetMapping("/usuarios")
@@ -113,7 +123,7 @@ public class UsuarioController {
 
             correoService.enviarBienvenida(
                     nuevoUsuario.getEmail(),
-                    nuevoUsuario.getNombre()
+                    nuevoUsuario.getPersona().getNombre()
             );
 
             return new ResponseEntity<>(
@@ -167,116 +177,49 @@ public class UsuarioController {
     @PutMapping("/usuarios/{id}")
     public ResponseEntity<Object> actualizarUsuario(
             @PathVariable Integer id,
-            @RequestBody Usuario usuarioDetalles
+            @Valid @RequestBody ActualizarUsuarioDTO datos
     ) {
-
-        Optional<Usuario> usuarioOptional =
-                usuarioRepository.findById(id);
-
-        if (usuarioOptional.isEmpty()) {
-            return new ResponseEntity<>(
-                    "El usuario con ID " + id + " no existe.",
-                    HttpStatus.NOT_FOUND
-            );
-        }
-
-        Usuario usuarioExistente = usuarioOptional.get();
-
-        if (!usuarioExistente.isActivo()) {
-            return new ResponseEntity<>(
-                    "El usuario no está activo y no puede ser modificado.",
-                    HttpStatus.NOT_FOUND
-            );
-        }
-
-        if (usuarioDetalles.getNombre() != null) {
-            usuarioExistente.setNombre(
-                    usuarioDetalles.getNombre()
-            );
-        }
-
-        if (usuarioDetalles.getApellido() != null) {
-            usuarioExistente.setApellido(
-                    usuarioDetalles.getApellido()
-            );
-        }
-
-        /*
-         * Comprobar que el nuevo email no pertenezca
-         * a otro usuario.
-         */
-        if (usuarioDetalles.getEmail() != null) {
-
-            String nuevoEmail =
-                    usuarioDetalles.getEmail();
-
-            if (nuevoEmail.trim().isEmpty()) {
-                return new ResponseEntity<>(
-                        "El email no puede estar vacío.",
-                        HttpStatus.BAD_REQUEST
-                );
-            }
-
-            boolean emailOcupado = usuarioRepository
-                    .existsByEmailIgnoreCaseAndIdNot(
-                            nuevoEmail,
-                            id
-                    );
-
-            if (emailOcupado) {
-                return new ResponseEntity<>(
-                        "Ya existe otro usuario registrado con ese email.",
-                        HttpStatus.CONFLICT
-                );
-            }
-
-            usuarioExistente.setEmail(nuevoEmail);
-        }
-
-        if (usuarioDetalles.getGenero() != null) {
-            usuarioExistente.setGenero(
-                    usuarioDetalles.getGenero()
-            );
-        }
-
-        if (usuarioDetalles.getFechaNacimiento() != null) {
-            usuarioExistente.setFechaNacimiento(
-                    usuarioDetalles.getFechaNacimiento()
-            );
-        }
-
-        if (usuarioDetalles.getPassword() != null
-                && !usuarioDetalles.getPassword().isEmpty()) {
-
-            String claveNuevaEncriptada =
-                    passwordEncoder.encode(
-                            usuarioDetalles.getPassword()
-                    );
-
-            usuarioExistente.setPassword(
-                    claveNuevaEncriptada
-            );
-        }
-
         try {
-            /*
-             * saveAndFlush fuerza el UPDATE inmediatamente,
-             * permitiendo capturar una colisión simultánea.
-             */
-            Usuario usuarioActualizado =
-                    usuarioRepository.saveAndFlush(
-                            usuarioExistente
-                    );
-
             return ResponseEntity.ok(
-                    new UsuarioDTO(usuarioActualizado)
+                    usuarioService.actualizarUsuario(id, datos)
             );
+
+        } catch (ConstraintViolationException e) {
+            String mensaje = e.getConstraintViolations().stream()
+                    .map(v -> v.getMessage())
+                    .distinct()
+                    .sorted()
+                    .collect(Collectors.joining(" "));
+
+            return ResponseEntity.badRequest().body(mensaje);
+
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(e.getMessage());
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                    .body(e.getMessage());
+
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(e.getMessage());
+
+        } catch (OptimisticLockingFailureException
+                 | OptimisticLockException e) {
+
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(
+                            "El usuario fue modificado por otra operación. " +
+                                    "Volvé a cargar sus datos e intentá nuevamente."
+                    );
 
         } catch (DataIntegrityViolationException e) {
-            return new ResponseEntity<>(
-                    "Ya existe otro usuario registrado con ese email.",
-                    HttpStatus.CONFLICT
-            );
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(
+                            "Los datos entran en conflicto con otro registro. " +
+                                    "Revisá el email."
+                    );
         }
     }
 }

@@ -80,7 +80,7 @@ public class RecuperacionPasswordService {
 
         correoService.enviarRecuperacionPassword(
                 usuario.getEmail(),
-                usuario.getNombre(),
+                usuario.getPersona().getNombre(),
                 enlace
         );
     }

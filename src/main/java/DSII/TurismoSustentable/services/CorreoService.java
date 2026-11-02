@@ -184,7 +184,7 @@ public class CorreoService {
                 );
 
         String nombre = escaparHtml(
-                alquiler.getUsuario().getNombre()
+                alquiler.getUsuario().getPersona().getNombre()
         );
 
         String codigoBicicleta = escaparHtml(
@@ -229,7 +229,7 @@ public class CorreoService {
 
         return enviarCorreo(
                 alquiler.getUsuario().getEmail(),
-                alquiler.getUsuario().getNombre(),
+                alquiler.getUsuario().getPersona().getNombre(),
                 "Comprobante de inicio de alquiler",
                 contenidoHtml
         );
@@ -245,7 +245,7 @@ public class CorreoService {
                 );
 
         String nombre = escaparHtml(
-                alquiler.getUsuario().getNombre()
+                alquiler.getUsuario().getPersona().getNombre()
         );
 
         String codigoBicicleta = escaparHtml(
@@ -293,7 +293,7 @@ public class CorreoService {
 
         return enviarCorreo(
                 alquiler.getUsuario().getEmail(),
-                alquiler.getUsuario().getNombre(),
+                alquiler.getUsuario().getPersona().getNombre(),
                 "Ticket de finalización de alquiler",
                 contenidoHtml
         );
