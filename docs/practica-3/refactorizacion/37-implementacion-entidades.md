@@ -61,6 +61,43 @@ Pendientes las pruebas de validación y persistencia.
   y se normaliza a mayúsculas.
 - La normalización y validación específica por tipo y país
   se completarán antes de conectar el nuevo registro.
-- La relación con Usuario, los DTO, servicios, repositorios,
-  la precarga y las pruebas de persistencia quedan pendientes.
-- Usuario y el registro actual todavía no utilizan Persona.
+- Los DTO, servicios, repositorios, la precarga y las pruebas
+  de persistencia quedan pendientes.
+- La relación desde Usuario se incorpora en el bloque 4.
+  El registro actual todavía no crea ni asigna Persona a la cuenta.
+
+## Bloque 4 Adaptación incremental de Usuario
+
+### Etapa 1 Relación con Persona
+
+Estado: relación incorporada y revisada estáticamente.
+Compilación exitosa según la salida de terminal aportada por el desarrollador:
+`.\gradlew.bat compileJava`, con BUILD SUCCESSFUL en 2 segundos.
+Pendientes las pruebas de validación y persistencia.
+
+- Punto de partida: commit a5b88ed, con Persona incorporada. El 2 de
+  noviembre de 2026 se comprobó que la referencia de la rama en GitHub
+  coincide con el commit local y que el árbol de trabajo estaba limpio.
+- Se incorporó persona a Usuario mediante OneToOne con carga LAZY,
+  optional false y JoinColumn persona_id, obligatoria y única.
+- La FK pertenece a USUARIO y referencia PERSONA.id. Su unicidad
+  impide vincular la misma fila Persona a varias cuentas; la unicidad
+  documental de Persona es una restricción distinta y se conserva.
+- Se agregaron getPersona y setPersona. La relación no tiene cascadas
+  de persistencia o borrado sobre Persona ni sobre los catálogos compartidos.
+- Nombre, apellido, fecha de nacimiento y GeneroUsuario permanecen
+  temporalmente en Usuario para conservar las referencias Java actuales.
+  Esta duplicación es transitoria y no es el modelo final del DER v5.
+- Autenticación por email, enum Rol, DTO, correos y controladores no
+  se modificaron mediante este primer paso.
+- La obligatoriedad de Persona exige adaptar el registro y la carga
+  inicial antes de volver a ejecutarlos: los constructores antiguos
+  todavía no asignan Persona. Una compilación exitosa no garantiza
+  que el registro existente siga funcionando con esta relación nueva.
+- Quedan pendientes la separación definitiva de datos personales,
+  los DTO de entrada, la creación transaccional de persona y cuenta,
+  el nickname y su autenticación, los roles múltiples y los restantes
+  ajustes de Usuario previstos en el DER v5.
+- La verificación de esta etapa solo comprende revisión estática y
+  la compilación comunicada. No acredita pruebas de contexto, registro,
+  autenticación ni comprobación de esquema o datos en MySQL.

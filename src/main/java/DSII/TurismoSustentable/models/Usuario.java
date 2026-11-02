@@ -19,6 +19,15 @@ public class    Usuario {
     @GenericGenerator(name = "native", strategy = "native")
     private int id;
 
+    @NotNull(message = "Los datos personales son obligatorios.")
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(
+            name = "persona_id",
+            nullable = false,
+            unique = true
+    )
+    private Persona persona;
+
     @NotBlank(message = "El nombre no puede estar vacío.")
     @Size(max = 50, message = "El nombre no puede superar los 50 caracteres.")
     @Pattern(
@@ -147,6 +156,14 @@ public class    Usuario {
     // GETTERS Y SETTERS
     public int getId() {
         return id;
+    }
+
+    public Persona getPersona() {
+        return persona;
+    }
+
+    public void setPersona(Persona persona) {
+        this.persona = persona;
     }
 
     public Rol getRol() {
