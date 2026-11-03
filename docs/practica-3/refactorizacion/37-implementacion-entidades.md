@@ -710,3 +710,273 @@ No se modificaron dependencias ni código productivo en esta etapa.
 - Continúan pendientes pruebas HTTP de estados 400/404/409, seguridad
   por proxy e integración con una base aislada, además de las adaptaciones
   de frontend, auditoría, registro y retirada de campos duplicados.
+
+### Etapa 13 Retirada de datos personales duplicados de Usuario
+
+Estado: implementado y revisado estáticamente el 2 de noviembre de 2026;
+compilación y 22 pruebas filtradas confirmadas el 3 de noviembre de 2026.
+El desarrollador autorizó excepcionalmente
+al asistente a aplicar únicamente este bloque, excluyendo el paso 5
+de ejecución de comprobaciones con Gradle. Se mantiene el trabajo manual
+para los siguientes bloques salvo nueva autorización.
+
+Punto de partida: commit e5916e9, publicado por el desarrollador en
+codex/refactorizacion-practicas-iii. Se comprobaron HEAD y referencia
+local de la rama remota. Antes de editar Java solo había cambios en
+este MD, correspondientes a la preparación de esta etapa.
+
+- La búsqueda de consumidores confirmó que los constructores antiguos
+  de Usuario solo son utilizados por initData del main. Sus datos
+  personales ya no se leen desde los consumidores adaptados. Persona,
+  DTO de entrada y DTO de salida conservan sus propios campos y métodos.
+- Se reemplazó TurismoSustentableApplication por el arranque mínimo
+  de Spring Boot, conservando paquete, nombre de clase, SpringBootApplication
+  y main. Se retiraron el CommandLineRunner antiguo y sus dependencias.
+  Esa carga usa el modelo anterior, incluido usuario sin Persona/nickname,
+  bicicletas, tarjetas y alquileres que requieren revisión para el DER v5.
+- La carga inicial anterior queda conservada en el historial Git del
+  commit e5916e9 y en main estable; no se crea una copia Java duplicada
+  dentro de src. Se preparará después una configuración de carga inicial
+  explícita de desarrollo compatible con el nuevo modelo. Esta etapa
+  no la reemplaza todavía ni afirma que existan datos precargados.
+- No se borró ni modificó una base de datos mediante esta edición de código.
+  No se ejecutó la aplicación: el perfil refactor conserva create-drop
+  sobre turismo_sustentable y requiere verificar su activación y destino
+  antes del primer arranque. La separación de ramas no aísla una base.
+- En Usuario se retiraron nombre, apellido, fechaNacimiento y genero
+  del enum anterior, incluidas sus anotaciones y sus ocho getters/setters.
+  No se trasladaron de nuevo a la cuenta: las validaciones y columnas
+  correspondientes de Persona se conservaron sin cambios.
+- Se retiraron los dos constructores con datos personales y se mantuvo
+  el constructor vacío requerido por JPA. Se incorporó otro constructor
+  con Persona, nickname, email y passwordHasheada, utilizando los setters
+  de los cuatro atributos. No hashea en la entidad ni recibe roles del formulario.
+- Se eliminó el import de LocalDate en Usuario; LocalDateTime sigue
+  siendo necesario. El enum GeneroUsuario no se borró: queda
+  pendiente revisar y retirar ese archivo sin consumidores.
+- UsuarioDTOTest utiliza el constructor nuevo en su primer caso,
+  conservando la prueba de normalización y lectura desde Persona.
+  El caso de cuenta sin Persona mantuvo el constructor vacío.
+- Rol único anterior, Tarjeta, los mappings de hash y recuperación,
+  equals/hashCode, id y demás ajustes de Usuario no se cambian aquí.
+  Esta retirada no se presenta como la versión final completa del DER v5.
+- El POST de registro todavía recibe la entidad Usuario y requiere
+  sustituirse por RegistroUsuarioDTO y creación transaccional de Persona
+  y cuenta. No se considera seguro ni terminado el registro por esta
+  limpieza. El nuevo constructor no sustituye esa capa de servicio.
+- Se revisaron estáticamente los diffs de los tres archivos Java y
+  las referencias restantes: GeneroUsuario solo aparece en la declaración
+  de su propio enum; los tres usos restantes de new Usuario corresponden
+  al nuevo constructor y a los dos constructores vacíos de las pruebas.
+- Durante la implementación no se ejecutó Gradle, javac, pruebas, la aplicación, SQL ni operaciones
+  Git de staging, commit o push. La compilación y las tres suites filtradas
+  quedaron a cargo del desarrollador. En ese momento no se registraron
+  como superadas: los informes de la etapa 12 correspondían al código anterior
+  a esta retirada. La ejecución posterior se documenta a continuación.
+- El alcance de escritura fue el main, Usuario, la primera preparación
+  de datos de UsuarioDTOTest y este registro de implementación. No se
+  modificaron Persona, los otros modelos, DTO, servicios, controladores,
+  repositorios, frontend, dependencias ni configuración de la base.
+
+#### Comprobación posterior de la etapa 13
+
+- El desarrollador ejecutó el 3 de noviembre de 2026 las tres suites
+  filtradas y aportó BUILD SUCCESSFUL en 28 segundos. Se revisaron los
+  XML generados después de las modificaciones de los tres archivos Java:
+  RegistroUsuarioDTOTest, 10 pruebas (2026-11-03T07:43:35.456Z);
+  UsuarioDTOTest, 2 (2026-11-03T07:43:36.133Z);
+  UsuarioServiceTest, 10 (2026-11-03T07:43:36.160Z).
+  Total: 22 pruebas, 0 fallos, 0 errores y 0 omitidas.
+- Los informes corresponden a las 04:43:35-36 de Buenos Aires.
+  Confirman la compilación y las comprobaciones unitarias existentes
+  después de retirar los campos duplicados, no el registro HTTP ni
+  la creación del esquema. No se arrancó la aplicación ni se conectó
+  a una base de datos durante esta revisión del asistente.
+
+### Etapa 14 Separación entre contraseña de entrada y hash persistido
+
+Estado: implementado manualmente y revisado el 3 de noviembre de 2026.
+Compilación y 22 pruebas existentes confirmadas; no hay todavía pruebas
+específicas de las nuevas anotaciones. El asistente solo actualiza este MD.
+
+- Se mantiene la regla aprobada del documento 25: RegistroUsuarioDTO
+  valida la contraseña en claro antes del hasheado. Usuario almacena
+  el resultado del PasswordEncoder, no vuelve a aplicarle esa política.
+- El cambio aplicado se limita al bloque password de Usuario:
+  NotBlank y Size con máximo 255 para el dato persistido, sin la expresión
+  de composición ni el límite 6-64 de la contraseña en claro.
+  JsonProperty WRITE_ONLY evita incluir este campo al serializar la entidad.
+- Se conservan nombre del atributo, getters/setters, nombre actual de la
+  columna y su capacidad 255. No se cambia BCrypt ni se genera un hash
+  mediante estas anotaciones; el servicio debe entregarlo ya hasheado.
+  No se modifica RegistroUsuarioDTO ni su política de contraseña.
+- El POST actual todavía recibe Usuario, no RegistroUsuarioDTO.
+  Retirar las reglas del campo persistido no completa ni asegura el
+  registro público: se debe conectar el DTO y la creación transaccional
+  de Persona, Usuario y rol antes de considerar funcional ese circuito.
+  No se debe desplegar esta etapa intermedia como un registro terminado.
+- La recuperación existente valida la contraseña en claro mediante
+  validarPassword antes de llamar a PasswordEncoder. Su adaptación
+  transaccional y las pruebas de integración siguen pendientes.
+- Se comprobó el bloque completo: comentario, JsonProperty WRITE_ONLY,
+  NotBlank para el hash, Size máximo 255 y Column conservando nombre y
+  longitud. Se retiraron el mínimo 6, el máximo 64 y el Pattern de
+  contraseña en claro únicamente de este campo de la entidad.
+- El POST sigue recibiendo Usuario: no se interpreta el mensaje del
+  desarrollador como una adaptación ya realizada del controlador.
+- El desarrollador aportó BUILD SUCCESSFUL en 10 segundos. Los XML
+  posteriores al cambio confirman 22 pruebas, 0 fallos, 0 errores y 0 omitidas:
+  RegistroUsuarioDTOTest, 10 (2026-11-03T07:50:38.254Z);
+  UsuarioDTOTest, 2 (2026-11-03T07:50:38.947Z);
+  UsuarioServiceTest, 10 (2026-11-03T07:50:39.019Z).
+  La clase compilada Usuario tiene fecha posterior a su archivo fuente.
+- Estas suites no validan específicamente las anotaciones del hash ni su
+  exclusión JSON en Usuario. La exclusión que prueba RegistroUsuarioDTOTest
+  corresponde al DTO, no a la entidad. Persistencia y HTTP siguen pendientes.
+  No se ejecutaron pruebas ni la aplicación desde el asistente.
+
+### Etapa 15 Preparación del registro transaccional mediante DTO
+
+Estado: RegistroUsuarioService incorporado manualmente, revisado y compilado
+el 3 de noviembre de 2026. Pruebas propias del registro pendientes.
+No se modifica Java desde el asistente ni se da por conectado el POST.
+
+- El servicio de registro se separa del servicio de edición existente para
+  incorporar el alta sin reemplazar UsuarioService ni afectar sus pruebas.
+  Recibe RegistroUsuarioDTO con Validated, Valid y NotNull mediante el
+  proxy de Spring; no recibirá entidades o roles suministrados por el cliente.
+- Dependencias incorporadas: UsuarioRepository, PersonaRepository,
+  GeneroRepository, TipoDocumentoRepository, PaisRepository y PasswordEncoder.
+  Se comprueban email y nickname ocupados, existencia de los tres catálogos
+  y duplicidad del documento compuesto antes de iniciar las escrituras.
+- Se aplica BCrypt mediante el PasswordEncoder ya configurado, se crea
+  Persona, se vincula a Usuario y se guarda la cuenta en una transacción.
+  Los errores se propagarán, sin capturas que conviertan un fallo en éxito
+  parcial. La atomicidad real requiere una prueba de integración posterior.
+- La asignación CLIENTE utiliza transitoriamente el enum Rol actual y
+  activo se fija en el backend. No se afirma haber implementado ROL ni
+  USUARIO_ROL del DER v5; ese cambio debe conservarse como tarea pendiente.
+- Los precontroles no sustituyen las restricciones UNIQUE físicas de email,
+  nickname, documento compuesto y persona_id. Las colisiones simultáneas
+  deberán manejarse también en la respuesta HTTP del siguiente bloque.
+- El servicio devuelve UsuarioDTO dentro de la transacción y no envía
+  correo. Al adaptar el controlador, la bienvenida se conservará después
+  de que el servicio haya confirmado el alta, no antes de un posible rollback.
+- Continúan pendientes: conectar POST /api/usuarios al servicio y al DTO,
+  respuestas HTTP, pruebas propias del registro, carga inicial de catálogos,
+  frontend, reglas documentales específicas por tipo/país y los roles del DER.
+  Las 22 pruebas anteriores no ejercitan este servicio nuevo.
+- Se revisó el archivo completo: paquete services dentro de src/main/java,
+  imports, seis campos final y sus asignaciones de constructor, anotaciones,
+  precontroles antes de guardar, hasheado antes de crear Usuario, uso de la
+  Persona devuelta por save, saveAndFlush de la cuenta y mapeo a UsuarioDTO.
+  No se añadieron capturas que impidan propagar el fallo transaccional.
+- El archivo fuente tiene fecha 2026-11-03T07:56:35Z y su clase compilada
+  2026-11-03T07:58:24Z. Los XML disponibles confirman 22 pruebas sin fallos,
+  errores ni omitidas: RegistroUsuarioDTOTest, 10 (07:58:28.211Z);
+  UsuarioDTOTest, 2 (07:58:28.742Z); UsuarioServiceTest, 10 (07:58:28.779Z),
+  todas del 3 de noviembre de 2026.
+- El último comando informado terminó BUILD SUCCESSFUL en 2 segundos con
+  las cuatro tareas UP-TO-DATE: reutiliza resultados, no representa otra
+  ejecución de las pruebas ni añade casos del registro. Los artefactos
+  revisados son posteriores al archivo fuente y respaldan su compilación.
+  No prueban el proxy de validación, rollback real ni la persistencia.
+- No se ejecutó Gradle desde el asistente ni se modificó staging. El archivo
+  nuevo tiene cambios en índice y en directorio de trabajo del desarrollador;
+  se conservaron ambos estados, sin descartar ni preparar modificaciones.
+
+### Etapa 16 Conexión del controlador al registro mediante DTO
+
+Estado: cambios incorporados manualmente, revisados y compilados el 3 de
+noviembre de 2026. Las 22 pruebas existentes pasan; no son pruebas HTTP
+ni casos propios del servicio de registro. El asistente solo edita este MD.
+
+- Se añadieron RegistroUsuarioDTO y RegistroUsuarioService a los
+  imports, retirar PasswordEncoder de este controlador e inyectar el nuevo
+  servicio mediante el constructor existente. Rol se conserva para DELETE.
+- Solo se reemplaza el POST /api/usuarios: recibe Valid RequestBody
+  RegistroUsuarioDTO y delega el alta en registrarUsuario. Se retiran del
+  controlador el hasheado, los precontroles y la persistencia directa del alta.
+  Los demás endpoints y UsuarioService se conservan.
+- Los errores de validación del cuerpo previos a entrar al método siguen
+  atendidos por GlobalExceptionHandler. Se implementaron respuestas locales 400
+  para ConstraintViolationException e IllegalArgumentException y 409 para
+  IllegalStateException y DataIntegrityViolationException. En este último
+  caso el mensaje no expondrá SQL ni atribuirá toda colisión solo al email.
+- La llamada al servicio se mantiene dentro del try para abarcar errores
+  propagados desde el proxy y al confirmar la transacción. No se incorpora
+  Transactional al controlador ni una captura genérica de excepciones.
+- La bienvenida se solicita fuera del try del alta, después del retorno
+  del servicio, utilizando email y nombre del DTO de salida. Se conserva
+  el comportamiento actual de CorreoService, que devuelve false cuando
+  faltan credenciales o captura un RestClientException; no se agrega un
+  mecanismo de entrega garantizada ni se prueba el envío en esta etapa.
+- El resultado previsto del alta exitosa es 201 con UsuarioDTO, sin hash
+  de contraseña ni datos del token. El formulario actual todavía requiere
+  adaptación a los campos y catálogos nuevos; conectar el backend no se
+  presenta como registro de punta a punta ya comprobado.
+- Quedan pruebas propias de servicio y HTTP, integración con base aislada,
+  carga inicial y adaptación de roles al DER v5, además del frontend.
+- Se revisaron el archivo completo y su diff: se retiraron import, campo,
+  parámetro y asignación de PasswordEncoder únicamente del controlador;
+  los dos imports nuevos y la inyección de RegistroUsuarioService están
+  correctos. El POST tiene las cuatro ramas catch previstas y el envío de
+  bienvenida utiliza nombre y email del DTO después de la llamada al servicio.
+- GET, DELETE y PUT no presentan cambios en el diff. Se conserva Rol para
+  la protección de DELETE y no se agrega Transactional al controlador.
+  No se encontraron métodos POST duplicados ni cambios fuera de ese bloque,
+  los imports y la inyección del constructor.
+- El desarrollador informó BUILD SUCCESSFUL en 8 segundos. La clase
+  compilada UsuarioController (2026-11-03T08:15:02Z) es posterior al fuente
+  (08:14:32Z). Los XML confirman 22 pruebas, 0 fallos, 0 errores y 0 omitidas:
+  RegistroUsuarioDTOTest, 10 (08:15:05.730Z); UsuarioDTOTest, 2 (08:15:06.325Z);
+  UsuarioServiceTest, 10 (08:15:06.422Z), del 3 de noviembre de 2026.
+- Los resultados respaldan compilación y regresión unitaria existente,
+  no demuestran respuestas HTTP, validación por proxy, commit/rollback ni
+  envío de correo. No se ejecutó Gradle ni la aplicación desde el asistente.
+  git diff --check no informó problemas de espacios; no se escribió en Git.
+
+### Etapa 17 Pruebas unitarias del servicio de registro
+
+Estado: RegistroUsuarioServiceTest creado manualmente, revisado y ejecutado
+el 3 de noviembre de 2026. Ocho pruebas nuevas superadas; 30 junto a las
+tres suites anteriores. El asistente solo actualiza este MD.
+
+- Se utiliza JUnit 5 con MockitoExtension, seis dependencias simuladas
+  e InjectMocks sobre RegistroUsuarioService. No se arranca Spring ni una
+  base de datos y no se envían correos. Los fixtures se preparan sin stubs
+  globales para no dejar configuraciones no utilizadas en los rechazos.
+- Ocho casos implementados y superados: alta correcta, email ocupado, nickname ocupado,
+  documento compuesto ocupado, género inexistente, tipo de documento
+  inexistente, país emisor inexistente y propagación de un conflicto de
+  integridad al guardar la cuenta.
+- En el alta se comprueban los datos normalizados, los catálogos elegidos,
+  el vínculo con Persona, la delegación a PasswordEncoder y la asignación
+  CLIENTE/activo. La salida esperada es UsuarioDTO con id simulado.
+- El valor retornado por el encoder es un hash explícitamente simulado;
+  no se presenta como un hash BCrypt utilizable ni prueba del algoritmo.
+  Los identificadores y catálogos son ficticios, no filas cargadas en la base.
+- Los rechazos previos a las escrituras no deben guardar Persona o Usuario
+  ni llamar al encoder. La excepción simulada al guardar Usuario debe
+  propagarse, pero el test no afirma revertir la Persona en una base real.
+- Por ser una instancia construida por Mockito, estas pruebas no ejecutan
+  los proxies Validated/Transactional. Tampoco comprueban SQL UNIQUE,
+  rollback real, autorización ni respuestas HTTP del controlador.
+- Se revisó el archivo completo: paquete y ubicación de test, los seis
+  mocks, InjectMocks, fixtures, capturas de Persona/Usuario, mensajes de
+  rechazo, helpers y propagación de la excepción coinciden con lo indicado.
+  No se agregaron stubs generales que rompan los casos de rechazo temprano.
+- El archivo fuente tiene fecha 2026-11-03T08:25:12Z y su clase compilada
+  08:25:40Z. El desarrollador aportó BUILD SUCCESSFUL en 8 segundos usando
+  filtros explícitos para las cuatro suites, sin ejecutar contextLoads.
+- Los XML confirman 30 pruebas, 0 fallos, 0 errores y 0 omitidas:
+  RegistroUsuarioDTOTest, 10 (2026-11-03T08:25:42.960Z);
+  UsuarioDTOTest, 2 (08:25:43.461Z);
+  RegistroUsuarioServiceTest, 8 (08:25:43.491Z);
+  UsuarioServiceTest, 10 (08:25:44.382Z), todas del 3 de noviembre de 2026.
+- git diff --check no informó problemas de espacios. No se ejecutaron
+  Gradle, la aplicación, SQL ni envíos de correo desde el asistente; tampoco
+  se modificaron el índice de Git, commits o ramas del desarrollador.
+- El bloque queda comprobado a nivel unitario. Continúan pendientes
+  pruebas HTTP e integración real, frontend, carga inicial y roles múltiples
+  del DER v5. Las 30 pruebas no equivalen a registro de punta a punta probado.

@@ -7,7 +7,6 @@ import DSII.TurismoSustentable.repositories.UsuarioRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.dao.DataIntegrityViolationException;
 import java.security.Principal;
@@ -15,6 +14,8 @@ import DSII.TurismoSustentable.services.CorreoService;
 import DSII.TurismoSustentable.dto.ActualizarUsuarioDTO;
 import DSII.TurismoSustentable.services.UsuarioService;
 import org.springframework.dao.OptimisticLockingFailureException;
+import DSII.TurismoSustentable.dto.RegistroUsuarioDTO;
+import DSII.TurismoSustentable.services.RegistroUsuarioService;
 
 import javax.persistence.EntityNotFoundException;
 import javax.persistence.OptimisticLockException;
@@ -30,20 +31,20 @@ import java.util.stream.Collectors;
 public class UsuarioController {
 
     private final UsuarioRepository usuarioRepository;
-    private final PasswordEncoder passwordEncoder;
     private final CorreoService correoService;
     private final UsuarioService usuarioService;
+    private final RegistroUsuarioService registroUsuarioService;
 
     public UsuarioController(
             UsuarioRepository usuarioRepository,
-            PasswordEncoder passwordEncoder,
             CorreoService correoService,
-            UsuarioService usuarioService
+            UsuarioService usuarioService,
+            RegistroUsuarioService registroUsuarioService
     ) {
         this.usuarioRepository = usuarioRepository;
-        this.passwordEncoder = passwordEncoder;
         this.correoService = correoService;
         this.usuarioService = usuarioService;
+        this.registroUsuarioService = registroUsuarioService;
     }
 
     @GetMapping("/usuarios")
@@ -89,59 +90,45 @@ public class UsuarioController {
 
     @PostMapping("/usuarios")
     public ResponseEntity<Object> createUsuario(
-            @Valid @RequestBody Usuario usuario
+            @Valid @RequestBody RegistroUsuarioDTO datos
     ) {
-
-        String emailNormalizado = usuario.getEmail();
-
-        // Comprobación antes de guardar
-        if (usuarioRepository.existsByEmailIgnoreCase(
-                emailNormalizado
-        )) {
-            return new ResponseEntity<>(
-                    "Ya existe un usuario registrado con ese email.",
-                    HttpStatus.CONFLICT
-            );
-        }
-
-        // Cifrar la contraseña
-        String rawPassword = usuario.getPassword();
-        String encodedPassword = passwordEncoder.encode(rawPassword);
-        usuario.setPassword(encodedPassword);
-
-        // El registro público siempre crea clientes
-        usuario.setRol(Rol.CLIENTE);
-        usuario.setActivo(true);
+        UsuarioDTO nuevoUsuario;
 
         try {
-            /*
-             * saveAndFlush fuerza la inserción inmediatamente.
-             * Esto permite capturar aquí una colisión simultánea.
-             */
-            Usuario nuevoUsuario =
-                    usuarioRepository.saveAndFlush(usuario);
+            nuevoUsuario = registroUsuarioService.registrarUsuario(datos);
 
-            correoService.enviarBienvenida(
-                    nuevoUsuario.getEmail(),
-                    nuevoUsuario.getPersona().getNombre()
-            );
+        } catch (ConstraintViolationException e) {
+            String mensaje = e.getConstraintViolations().stream()
+                    .map(v -> v.getMessage())
+                    .distinct()
+                    .sorted()
+                    .collect(Collectors.joining(" "));
 
-            return new ResponseEntity<>(
-                    new UsuarioDTO(nuevoUsuario),
-                    HttpStatus.CREATED
-            );
+            return ResponseEntity.badRequest().body(mensaje);
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(e.getMessage());
 
         } catch (DataIntegrityViolationException e) {
-            /*
-             * Protección para dos registros simultáneos:
-             * ambos podrían superar existsByEmailIgnoreCase(),
-             * pero la restricción UNIQUE rechazará al segundo.
-             */
-            return new ResponseEntity<>(
-                    "Ya existe un usuario registrado con ese email.",
-                    HttpStatus.CONFLICT
-            );
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(
+                            "Los datos entran en conflicto con otro registro. " +
+                                    "Revisá el email, el nickname y el documento."
+                    );
         }
+
+        // El servicio ya confirmó el registro antes de solicitar el correo.
+        correoService.enviarBienvenida(
+                nuevoUsuario.getEmail(),
+                nuevoUsuario.getNombre()
+        );
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(nuevoUsuario);
     }
 
     @DeleteMapping("/usuarios/{id}")

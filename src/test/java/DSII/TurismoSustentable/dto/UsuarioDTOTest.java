@@ -27,10 +27,12 @@ class UsuarioDTOTest {
                 new Pais("AR", "Argentina")
         );
 
-        Usuario usuario = new Usuario();
-        usuario.setPersona(persona);
-        usuario.setEmail("ana@example.com");
-        usuario.setNickname(" Ana.Perez ");
+        Usuario usuario = new Usuario(
+                persona,
+                " Ana.Perez ",
+                " ANA@EXAMPLE.COM ",
+                "hash-simulado-para-test"
+        );
 
         UsuarioDTO dto = new UsuarioDTO(usuario);
 

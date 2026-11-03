@@ -6,7 +6,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import javax.persistence.*;
 import javax.validation.constraints.*;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
@@ -42,24 +41,6 @@ public class    Usuario {
     @Column(name = "nickname", nullable = false, unique = true, length = 30)
     private String nickname;
 
-    @NotBlank(message = "El nombre no puede estar vacío.")
-    @Size(max = 50, message = "El nombre no puede superar los 50 caracteres.")
-    @Pattern(
-            regexp = "^$|^[\\p{L}]+(?:[ '\\-][\\p{L}]+)*$",
-            message = "El nombre solo puede contener letras, espacios, apóstrofes o guiones."
-    )
-    @Column(nullable = false, length = 50)
-    private String nombre;
-
-    @NotBlank(message = "El apellido no puede estar vacío.")
-    @Size(max = 50, message = "El apellido no puede superar los 50 caracteres.")
-    @Pattern(
-            regexp = "^$|^[\\p{L}]+(?:[ '\\-][\\p{L}]+)*$",
-            message = "El apellido solo puede contener letras, espacios, apóstrofes o guiones."
-    )
-    @Column(nullable = false, length = 50)
-    private String apellido;
-
     @NotBlank(message = "El email no puede estar vacío.")
     @Email(
             regexp = "^$|^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$",
@@ -81,23 +62,15 @@ public class    Usuario {
     )
     private String email;
 
-    @NotBlank(message = "La clave es obligatoria.")
-    @Size(min = 6, max = 64, message = "La clave debe tener entre 6 y 64 caracteres.")
-    // Contraseña: entre 6 y 64 caracteres, con minúscula, mayúscula, carácter especial y sin espacios.
-    @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$&*])(?=\\S+$).+$",
-            message = "La clave debe contener una minúscula, una mayúscula, un carácter especial y no debe tener espacios.")
+    // Almacena la contraseña ya hasheada por el servicio.
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    @NotBlank(message = "El hash de la contraseña es obligatorio.")
+    @Size(
+            max = 255,
+            message = "El hash de la contraseña no puede superar los 255 caracteres."
+    )
     @Column(nullable = false, length = 255)
     private String password;
-
-    @NotNull(message = "La fecha de nacimiento es obligatoria.")
-    @Past(message = "La fecha de nacimiento debe estar en el pasado.")
-    @Column(nullable = false)
-    private LocalDate fechaNacimiento;
-
-    @NotNull(message = "El género es obligatorio.")
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private GeneroUsuario genero;
 
     // --- CAMPO ROL MODIFICADO ---
     @Enumerated(EnumType.STRING) // Almacena el Enum como String en la BD
@@ -139,23 +112,17 @@ public class    Usuario {
     public Usuario() {
     }
 
-    // Constructor actualizado con los campos y el rol
-    public Usuario(String nombre, String apellido, String email, String password, LocalDate fechaNacimiento, GeneroUsuario genero, boolean activo, Rol rol) {
-        this.setNombre(nombre);
-        this.setApellido(apellido);
-        this.setEmail(email);
-        this.password = password;
-        this.fechaNacimiento = fechaNacimiento;
-        this.genero = genero;
-        this.activo = true;
-        this.rol = rol; // Asignación del rol
-        this.alquileres = new HashSet<>();
-        this.tarjetas = new HashSet<>();
-    }
-
-    // Constructor de conveniencia para CLIENTE
-    public Usuario(String nombre, String apellido, String email, String password, LocalDate fechaNacimiento, GeneroUsuario genero, boolean activo) {
-        this(nombre, apellido, email, password, fechaNacimiento, genero, activo, Rol.CLIENTE);
+    // El servicio debe entregar la contraseña ya hasheada.
+    public Usuario(
+            Persona persona,
+            String nickname,
+            String email,
+            String passwordHasheada
+    ) {
+        setPersona(persona);
+        setNickname(nickname);
+        setEmail(email);
+        setPassword(passwordHasheada);
     }
 
     // Metodo para normalizar mail
@@ -227,26 +194,6 @@ public class    Usuario {
         this.id = id;
     }
 
-    public String getNombre() {
-        return nombre;
-    }
-
-    public void setNombre(String nombre) {
-        this.nombre = nombre == null
-                ? null
-                : nombre.trim();
-    }
-
-    public String getApellido() {
-        return apellido;
-    }
-
-    public void setApellido(String apellido) {
-        this.apellido = apellido == null
-                ? null
-                : apellido.trim();
-    }
-
     public String getEmail() {
         return email;
     }
@@ -263,22 +210,6 @@ public class    Usuario {
 
     public void setPassword(String password) {
         this.password = password;
-    }
-
-    public LocalDate getFechaNacimiento() {
-        return fechaNacimiento;
-    }
-
-    public void setFechaNacimiento(LocalDate fechaNacimiento) {
-        this.fechaNacimiento = fechaNacimiento;
-    }
-
-    public GeneroUsuario getGenero() {
-        return genero;
-    }
-
-    public void setGenero(GeneroUsuario genero) {
-        this.genero = genero;
     }
 
     public LocalDateTime getFechaRegistro() {
