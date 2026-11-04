@@ -199,7 +199,7 @@ erDiagram
         int bicicleta_id FK
         int tipo_mantenimiento_id FK
         int estado_orden_mantenimiento_id FK
-        int tecnico_id FK "Opcional en CREADA; requerido para trabajar"
+        int tecnico_id FK "Opcional en CREADA o PAUSADA por baja de tecnico; requerido para trabajar"
         datetime fecha_creacion
         datetime fecha_inicio "Opcional hasta iniciar"
         datetime fecha_fin "Opcional hasta cierre"

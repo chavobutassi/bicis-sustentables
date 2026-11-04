@@ -3,6 +3,7 @@ package DSII.TurismoSustentable.models;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.GenericGenerator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import javax.persistence.*;
 import javax.validation.constraints.*;
@@ -72,10 +73,9 @@ public class    Usuario {
     @Column(nullable = false, length = 255)
     private String password;
 
-    // --- CAMPO ROL MODIFICADO ---
-    @Enumerated(EnumType.STRING) // Almacena el Enum como String en la BD
-    private Rol rol = Rol.CLIENTE; // Valor por defecto: CLIENTE
-    // ----------------------------
+    @OneToMany(mappedBy = "usuario", fetch = FetchType.LAZY)
+    @JsonIgnore
+    private Set<UsuarioRol> usuarioRoles = new HashSet<>();
 
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     @CreationTimestamp
@@ -172,22 +172,8 @@ public class    Usuario {
         return version;
     }
 
-    public Rol getRol() {
-        return rol;
-    }
-
-    public void setRol(Rol rol) {
-        this.rol = rol;
-    }
-
-    // **METODO DE CONVENIENCIA PARA SABER SI ES ADMINISTRADOR**
-    public boolean esAdministrador() {
-        return this.rol == Rol.ADMIN;
-    }
-
-    // **METODO DE CONVENIENCIA PARA SABER SI PUEDE ALQUILAR**
-    public boolean puedeAlquilar() {
-        return this.rol == Rol.CLIENTE || this.rol == Rol.ADMIN;
+    public Set<UsuarioRol> getUsuarioRoles() {
+        return usuarioRoles;
     }
 
     public void setId(int id) {

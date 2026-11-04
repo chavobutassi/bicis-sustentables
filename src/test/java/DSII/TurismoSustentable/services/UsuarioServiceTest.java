@@ -12,6 +12,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityNotFoundException;
@@ -22,6 +23,7 @@ import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -70,6 +72,13 @@ class UsuarioServiceTest {
         usuario.setTokenRecuperacion("a".repeat(64));
         usuario.setVencimientoTokenRecuperacion(vencimientoOriginal);
 
+        Rol rolCliente = new Rol("CLIENTE");
+        ReflectionTestUtils.setField(rolCliente, "id", 2);
+
+        usuario.getUsuarioRoles().add(
+                new UsuarioRol(usuario, rolCliente)
+        );
+
         datos = new ActualizarUsuarioDTO();
         datos.setNombre(" Ana Maria ");
         datos.setApellido(" Lopez ");
@@ -97,7 +106,8 @@ class UsuarioServiceTest {
         assertEquals("DNI", personaOriginal.getTipoDocumento().getCodigo());
         assertEquals("AR", personaOriginal.getPaisEmisor().getCodigo());
         assertEquals("ana.perez", usuario.getNickname());
-        assertEquals(Rol.CLIENTE, usuario.getRol());
+        assertEquals(1, usuario.getUsuarioRoles().size());
+        assertEquals(List.of("CLIENTE"), resultado.getRoles());
         assertEquals("hash-simulado-para-test", usuario.getPassword());
         assertEquals("a".repeat(64), usuario.getTokenRecuperacion());
         assertEquals(vencimientoOriginal, usuario.getVencimientoTokenRecuperacion());

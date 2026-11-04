@@ -6,6 +6,8 @@ Estado: el usuario aprobó expresamente el 28 de octubre de 2026 agregar diagnos
 
 Actualización aprobada del 2 de noviembre: RN-TRZ-01 amplía y renombra el historial a HISTORIAL_ORDEN_MANTENIMIENTO, con once campos para transiciones y cambios permitidos de datos. El modelo completo queda en 29 entidades y 55 FK/relaciones por el conjunto de las cuatro mejoras. Se conserva ORDEN_MANTENIMIENTO íntegra. Ver [incorporación y condiciones](36-incorporacion-aprobada-trazabilidad-der.md).
 
+Actualización aprobada del 4 de noviembre: [RN-MAN-02, sección 3.1](17-permisos-y-transiciones-mantenimiento.md), permite la pausa administrativa excepcional y desasignación al inactivar al técnico asignado. Se precisa tecnico_id opcional también en PAUSADA pendiente de reasignación por esa baja, sin nuevas tablas, campos, claves o relaciones. No se implementó en Java ni en una base de datos.
+
 ## 1. Base de la revisión
 
 Se releyeron la sección de mantenimiento y los roles del diccionario original, los objetivos y requerimientos del PDF y sus referencias al trabajo técnico, y los campos de la orden e historial del DER v4. Se contrastaron con RN-MAN-01, RN-MAN-02, RN-MAN-03, RN-MAN-04, la baja de bicicleta, las incidencias aprobadas y el modelo v5. Los originales se conservan sin cambios.
@@ -30,7 +32,7 @@ No se agregan una tabla por tipo, combinaciones de tipo/estado ni nuevos estados
 | bicicleta_id | FK a BICICLETA.id | Obligatorio; una orden pertenece a una unidad |
 | tipo_mantenimiento_id | FK a TIPO_MANTENIMIENTO.id | Obligatorio; PREVENTIVO o CORRECTIVO |
 | estado_orden_mantenimiento_id | FK a ESTADO_ORDEN_MANTENIMIENTO.id | Obligatorio; inicia en CREADA |
-| tecnico_id | FK a USUARIO.id; asignación vigente | Puede faltar inicialmente en CREADA; iniciar/reanudar requiere técnico activo, con rol TECNICO y asignado |
+| tecnico_id | FK a USUARIO.id; asignación vigente | Puede faltar inicialmente en CREADA o en PAUSADA pendiente de reasignación por baja del técnico; trabajar/iniciar/reanudar requiere técnico activo, con rol TECNICO y asignado; la baja no borra al técnico histórico de órdenes cerradas |
 | fecha_creacion | Momento de registro de la orden | Obligatorio; backend, no una fecha libre del formulario |
 | fecha_inicio | Primer inicio efectivo del trabajo | Nulo antes de iniciar; no se reinicia al reanudar |
 | fecha_fin | Momento de cierre de la orden | Nulo mientras esté abierta; se registra al finalizar o cancelar; una cancelación anterior al inicio no inventa fecha_inicio |
@@ -93,7 +95,7 @@ La revisión de [D07 en el documento 33](33-revision-trazabilidad-incidencias-y-
 
 Una bicicleta puede tener muchas órdenes históricas, pero como máximo una abierta entre CREADA, EN_PROCESO y PAUSADA. Por eso no corresponde declarar bicicleta_id UNIQUE de forma global: impediría crear nuevas intervenciones después de cerrar las anteriores. El límite condicional requiere proteger la bicicleta y comprobar/crear la orden en una operación transaccional coherente, con la estrategia de índices y bloqueo que se concrete para la base elegida.
 
-Asignar exige ADMIN y una orden CREADA o PAUSADA. Iniciar, registrar trabajo, pausar o finalizar exige el técnico autorizado y asignado según RN-MAN-02; ser ADMIN no lo sustituye. Cancelar se conserva como acción administrativa con motivo. No se amplían permisos para salvar una operación que sus condiciones no permiten.
+Asignar exige ADMIN y una orden CREADA o PAUSADA. Iniciar, registrar trabajo y finalizar exige el técnico autorizado y asignado según RN-MAN-02; ser ADMIN no lo sustituye. La pausa habitual corresponde al técnico asignado; se admite exclusivamente la pausa administrativa de EN_PROCESO a PAUSADA al inactivarlo, con motivo, desasignación y evidencias según RN-MAN-02, sección 3.1. La baja y los efectos sobre todas sus órdenes abiertas deben ser atómicos y proteger la concurrencia. La orden conserva primer inicio, diagnóstico, trabajo y costos; no se fija fecha_fin ni se habilita la bicicleta. Desasignar una CREADA o una PAUSADA genera un evento de datos sin transición ficticia. Las cerradas no cambian. Cancelar se conserva como acción administrativa con motivo; no se amplían otros permisos.
 
 Un nuevo reporte se conserva aunque ya haya una orden abierta. No crea otra por repetición o concurrencia ni cambia automáticamente PREVENTIVO por CORRECTIVO. Reclasificar mantiene el recorrido autorizado de cancelación con motivo y creación de la correspondiente. Una preventiva pendiente no desaparece por cerrar un correctivo y no produce dos órdenes abiertas simultáneas.
 
@@ -113,6 +115,7 @@ Son criterios especificados, no ejecutados:
 - CP-DER-MAN-06: una cancelación conserva trabajos y costos reales ya registrados; no crea un cargo al cliente ni acredita aptitud.
 - CP-DER-MAN-07: reporte, hallazgo técnico y trabajo realizado se consultan separados; se exige diagnóstico al finalizar, no al crear.
 - CP-DER-MAN-08: los costos internos identifican moneda ARS y no modifican la liquidación del alquiler; otra moneda se rechaza en el alcance aprobado.
+- CP-DER-MAN-09: PAUSADA puede conservar tecnico_id nulo por baja del asignado, sin permitir trabajo ni reanudación; el evento conserva la asignación anterior y actor ADMIN real, y las órdenes cerradas mantienen su técnico histórico.
 
 ## 8. Incorporación y siguiente bloque
 

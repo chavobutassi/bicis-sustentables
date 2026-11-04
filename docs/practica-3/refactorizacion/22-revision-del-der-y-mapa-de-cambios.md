@@ -106,7 +106,7 @@ Los enlaces a la orden son referencias operativas: si ADMIN corrige una clasific
 
 TIPO_BICICLETA configura el intervalo positivo en meses; BICICLETA aporta fecha de alta inicial y las órdenes aportan la última preventiva satisfactoria. No se duplica inicialmente una columna de última preventiva. Crear o cancelar una orden no reinicia el calendario. Un legado sin referencia fiable requiere revisión inicial y no una fecha inventada.
 
-Una orden puede estar CREADA sin técnico, pero iniciar/reanudar exige el técnico autorizado y asignado. El resultado técnico se conserva aparte del estado de la orden. Un cierre favorable no habilita automáticamente: ADMIN conserva la autorización posterior bajo RN-MAN-02.
+Una orden puede estar CREADA sin técnico. La ampliación aprobada el 4 de noviembre de 2026 en RN-MAN-02, sección 3.1, permite también PAUSADA sin técnico al inactivar al asignado: ADMIN pausa excepcionalmente una EN_PROCESO y desasigna sus órdenes abiertas, conservando trabajo e historia; las cerradas no cambian. Iniciar/reanudar exige siempre el técnico activo autorizado y asignado. El resultado técnico se conserva aparte del estado de la orden. Un cierre favorable no habilita automáticamente: ADMIN conserva la autorización posterior bajo RN-MAN-02. Se precisa solo la condición de tecnico_id, sin nuevos campos, tablas o relaciones.
 
 ### Actor real y automatismos
 

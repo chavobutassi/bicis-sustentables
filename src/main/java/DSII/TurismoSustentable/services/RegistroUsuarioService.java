@@ -8,11 +8,14 @@ import DSII.TurismoSustentable.models.Persona;
 import DSII.TurismoSustentable.models.Rol;
 import DSII.TurismoSustentable.models.TipoDocumento;
 import DSII.TurismoSustentable.models.Usuario;
+import DSII.TurismoSustentable.models.UsuarioRol;
 import DSII.TurismoSustentable.repositories.GeneroRepository;
 import DSII.TurismoSustentable.repositories.PaisRepository;
 import DSII.TurismoSustentable.repositories.PersonaRepository;
+import DSII.TurismoSustentable.repositories.RolRepository;
 import DSII.TurismoSustentable.repositories.TipoDocumentoRepository;
 import DSII.TurismoSustentable.repositories.UsuarioRepository;
+import DSII.TurismoSustentable.repositories.UsuarioRolRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +34,8 @@ public class RegistroUsuarioService {
     private final TipoDocumentoRepository tipoDocumentoRepository;
     private final PaisRepository paisRepository;
     private final PasswordEncoder passwordEncoder;
+    private final RolRepository rolRepository;
+    private final UsuarioRolRepository usuarioRolRepository;
 
     public RegistroUsuarioService(
             UsuarioRepository usuarioRepository,
@@ -38,7 +43,9 @@ public class RegistroUsuarioService {
             GeneroRepository generoRepository,
             TipoDocumentoRepository tipoDocumentoRepository,
             PaisRepository paisRepository,
-            PasswordEncoder passwordEncoder
+            PasswordEncoder passwordEncoder,
+            RolRepository rolRepository,
+            UsuarioRolRepository usuarioRolRepository
     ) {
         this.usuarioRepository = usuarioRepository;
         this.personaRepository = personaRepository;
@@ -46,6 +53,8 @@ public class RegistroUsuarioService {
         this.tipoDocumentoRepository = tipoDocumentoRepository;
         this.paisRepository = paisRepository;
         this.passwordEncoder = passwordEncoder;
+        this.rolRepository = rolRepository;
+        this.usuarioRolRepository = usuarioRolRepository;
     }
 
     @Transactional
@@ -98,6 +107,12 @@ public class RegistroUsuarioService {
             );
         }
 
+        // El registro público siempre asigna CLIENTE desde el catálogo.
+        Rol rolCliente = rolRepository.findByCodigo("CLIENTE")
+                .orElseThrow(() -> new IllegalStateException(
+                        "El rol CLIENTE no está configurado."
+                ));
+
         // La contraseña se hashea antes de asignarla a Usuario.
         String passwordHasheada = passwordEncoder.encode(
                 datos.getPassword()
@@ -123,10 +138,20 @@ public class RegistroUsuarioService {
         );
 
         // El registro público nunca permite elegir privilegios.
-        usuario.setRol(Rol.CLIENTE);
         usuario.setActivo(true);
 
         Usuario usuarioGuardado = usuarioRepository.saveAndFlush(usuario);
+
+        // El usuario ya tiene id: ahora puede construirse su asignación.
+        UsuarioRol asignacionGuardada = usuarioRolRepository.save(
+                new UsuarioRol(usuarioGuardado, rolCliente)
+        );
+
+        // Mantener sincronizada la colección del usuario en memoria.
+        usuarioGuardado.getUsuarioRoles().add(asignacionGuardada);
+
+        // Detectar errores de persistencia antes de preparar la respuesta.
+        usuarioRolRepository.flush();
 
         return new UsuarioDTO(usuarioGuardado);
     }

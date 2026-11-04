@@ -1,6 +1,9 @@
 package DSII.TurismoSustentable.repositories;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import DSII.TurismoSustentable.models.Usuario;
 import java.util.List;
 import java.util.Optional;
@@ -31,6 +34,31 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
     boolean existsByNicknameIgnoreCaseAndIdNot(
             String nickname,
             Integer id
+    );
+
+    @EntityGraph(attributePaths = {
+            "persona.genero",
+            "usuarioRoles.rol"
+    })
+    @Query("select distinct u from Usuario u where u.activo = true")
+    List<Usuario> buscarActivosConDatosYRoles();
+
+    @EntityGraph(attributePaths = {
+            "persona.genero",
+            "usuarioRoles.rol"
+    })
+    @Query("select distinct u from Usuario u where u.id = :id")
+    Optional<Usuario> buscarPorIdConDatosYRoles(
+            @Param("id") Integer id
+    );
+
+    @EntityGraph(attributePaths = {
+            "persona.genero",
+            "usuarioRoles.rol"
+    })
+    @Query("select distinct u from Usuario u where u.email = :email")
+    Optional<Usuario> buscarPorEmailConDatosYRoles(
+            @Param("email") String email
     );
 
 }

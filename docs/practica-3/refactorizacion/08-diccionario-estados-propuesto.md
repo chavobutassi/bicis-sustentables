@@ -212,7 +212,7 @@ Finalizar o cancelar una orden no devuelve automáticamente una bicicleta a DISP
 
 ### Permisos de mantenimiento aprobados
 
-Estado del bloque: reparto aprobado expresamente por el usuario el 28 de octubre de 2026 en RN-MAN-02, incluida la autorización posterior por ADMIN para volver al servicio. No implementado. Se releyeron el Word de estados y el PDF de visión completos y se contrastó el DER v4 al preparar la propuesta que recibió esta aprobación.
+Estado del bloque: reparto aprobado expresamente por el usuario el 28 de octubre de 2026 en RN-MAN-02, incluida la autorización posterior por ADMIN para volver al servicio. El 4 de noviembre aprobó además la pausa administrativa excepcional y la orden PAUSADA sin técnico al inactivar al asignado, según la sección 3.1 de RN-MAN-02. No implementado. Se releyeron el Word de estados y el PDF de visión completos y se contrastó el DER v4 al preparar la propuesta inicial que recibió aprobación; las ampliaciones son decisiones posteriores, no atribuciones a esos originales.
 
 El Word define la orden como seguimiento del trabajo técnico, independiente de su tipo, y permite un resultado final que no necesariamente devuelve la bicicleta a operación. El PDF requiere órdenes e historial, acciones de técnicos y administración con trazabilidad; el DER incluye una asignación mediante `tecnico_id`. Esas fuentes no fijan una matriz exhaustiva ni exigen una aprobación administrativa adicional para volver al servicio. La distribución siguiente, incluida esa aprobación, fue aceptada expresamente por el usuario como decisión posterior, no como una atribución literal a los originales.
 
@@ -224,11 +224,14 @@ El Word define la orden como seguimiento del trabajo técnico, independiente de 
 | Iniciar o reanudar el trabajo | TECNICO asignado: CREADA o PAUSADA a EN_PROCESO |
 | Registrar diagnóstico, trabajo y costos del mantenimiento | TECNICO asignado, durante el trabajo; conserva la trazabilidad de lo registrado |
 | Pausar | TECNICO asignado: EN_PROCESO a PAUSADA, con motivo obligatorio |
+| Pausar excepcionalmente al inactivar al técnico asignado | ADMIN: EN_PROCESO a PAUSADA, con motivo y desasignación; solo para ese recorrido de baja lógica |
 | Finalizar | TECNICO asignado: EN_PROCESO a FINALIZADA, registrando trabajo realizado y resultado técnico, incluida la aptitud de la bicicleta |
 | Cancelar una orden abierta | ADMIN: CREADA, EN_PROCESO o PAUSADA a CANCELADA, con motivo obligatorio y sin borrar la orden |
 | Autorizar la vuelta al servicio después del mantenimiento | ADMIN, mediante una operación específica que exige conformidad técnica y los controles de disponibilidad indicados debajo |
 
 Nadie inicia o reanuda el trabajo sin una asignación válida. Si se necesita reasignar mientras está EN_PROCESO, primero se pausa; la reasignación no borra al actor ni los trabajos anteriores. Posteriormente se aprobó en RN-MAN-03 que una orden CREADA pueda estar todavía sin técnico; el DER debe respetar esa posibilidad sin permitir trabajo técnico sin asignación.
+
+Al inactivar al técnico asignado, una orden CREADA se conserva CREADA sin técnico; una EN_PROCESO pasa a PAUSADA sin técnico mediante la excepción administrativa aprobada; una PAUSADA conserva su estado y se desasigna. FINALIZADA y CANCELADA no cambian, ni pierden su técnico histórico. La misma orden conserva inicio, trabajo, diagnóstico y costos; la bicicleta sigue fuera de alquiler. ADMIN asigna luego un técnico activo con rol TECNICO, que debe iniciar o reanudar expresamente. No se crea un estado «pendiente de asignación» ni otra orden. La baja, los cambios y sus evidencias se confirman juntos con protección de concurrencia. Historial de orden y auditoría conservan motivo, fecha, actor ADMIN y valores anteriores/nuevos según RN-MAN-02, sección 3.1, y RN-TRZ-01.
 
 CLIENTE no administra órdenes ni cambia sus estados. Conserva la posibilidad ya aprobada de informar una falla al devolver. Un usuario con solo rol ADMIN no se considera técnico por ese solo hecho; si reúne también TECNICO y la asignación correspondiente, puede ejecutar las acciones técnicas bajo esos controles.
 
@@ -253,6 +256,7 @@ Estos escenarios se especifican para futuras pruebas del bloque aprobado; no se 
 - Un administrador sin el rol técnico y la asignación no puede registrar una finalización técnica como si hubiese realizado el trabajo.
 - Una reasignación mientras el trabajo está EN_PROCESO se rechaza hasta que se pause.
 - Una pausa o cancelación sin motivo se rechaza.
+- La inactivación del técnico pausa y desasigna las órdenes conforme a RN-MAN-02, sección 3.1, sin perder trabajo, habilitar bicicletas ni alterar órdenes cerradas; fuera de esa excepción ADMIN no obtiene un permiso general para pausar.
 - Finalizar con resultado no apta no habilita la bicicleta.
 - Una orden FINALIZADA sin conformidad técnica vigente, con otra orden bloqueante o con ubicación inválida no permite la vuelta al servicio.
 - Una autorización administrativa repetida no duplica la transición ni omite una falla registrada posteriormente.

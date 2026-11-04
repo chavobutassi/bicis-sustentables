@@ -1,7 +1,6 @@
 package DSII.TurismoSustentable.controllers;
 
 import DSII.TurismoSustentable.dto.UsuarioDTO;
-import DSII.TurismoSustentable.models.Rol;
 import DSII.TurismoSustentable.models.Usuario;
 import DSII.TurismoSustentable.repositories.UsuarioRepository;
 import org.springframework.http.HttpStatus;
@@ -50,7 +49,7 @@ public class UsuarioController {
     @GetMapping("/usuarios")
     public List<UsuarioDTO> getUsuarios(){
         // metodo que filtra por activo
-        return usuarioRepository.findByActivoTrue()
+        return usuarioRepository.buscarActivosConDatosYRoles()
                 .stream()
                 .map(UsuarioDTO:: new)
                 .collect(Collectors.toList());
@@ -58,7 +57,7 @@ public class UsuarioController {
 
     @GetMapping("/usuarios/{id}")
     public ResponseEntity<UsuarioDTO> getUsuarioPorId(@PathVariable Integer id) {
-        Optional<Usuario> usuarioOpt = usuarioRepository.findById(id);
+        Optional<Usuario> usuarioOpt = usuarioRepository.buscarPorIdConDatosYRoles(id);
 
         // Verificar el ID y devolver 404
         if (usuarioOpt.isEmpty()) {
@@ -82,7 +81,7 @@ public class UsuarioController {
         // Spring Security inyecta el objeto Principal (que contiene el email)
         String email = principal.getName();
 
-        Usuario usuario = usuarioRepository.findByEmail(email)
+        Usuario usuario = usuarioRepository.buscarPorEmailConDatosYRoles(email)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado."));
 
         return ResponseEntity.ok(new UsuarioDTO(usuario));
@@ -134,7 +133,7 @@ public class UsuarioController {
     @DeleteMapping("/usuarios/{id}")
     public ResponseEntity<Object> eliminarUsuarioLogico(@PathVariable Integer id) {
 
-        Optional<Usuario> usuarioOptional = usuarioRepository.findById(id); // Buscar el usuario
+        Optional<Usuario> usuarioOptional = usuarioRepository.buscarPorIdConDatosYRoles(id); // Buscar el usuario
 
         if (usuarioOptional.isEmpty()) { // Verificar existencia
             // Si no existe devuelve 404
@@ -144,7 +143,12 @@ public class UsuarioController {
         Usuario usuario = usuarioOptional.get();
 
         // --- VALIDACIÓN DE ROL ---
-        if (usuario.getRol() == Rol.ADMIN) {
+        boolean esAdministrador = usuario.getUsuarioRoles().stream()
+                .anyMatch(asignacion ->
+                        "ADMIN".equals(asignacion.getRol().getCodigo())
+                );
+
+        if (esAdministrador) {
             return new ResponseEntity<>(
                     "No se puede eliminar a un usuario Administrador.",
                     HttpStatus.FORBIDDEN // 403 Prohibido

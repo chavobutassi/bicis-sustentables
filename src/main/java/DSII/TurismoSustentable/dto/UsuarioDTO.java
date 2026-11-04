@@ -7,6 +7,7 @@ import DSII.TurismoSustentable.models.Usuario;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class UsuarioDTO {
 
@@ -19,6 +20,7 @@ public class UsuarioDTO {
     private boolean activo;
     private String genero;
     private String rol;
+    private List<String> roles;
     private LocalDate fechaNacimiento;
 
     private List<AlquilerDTO> alquileres;
@@ -45,10 +47,22 @@ public class UsuarioDTO {
         this.fechaNacimiento = persona.getFechaNacimiento();
         this.genero = persona.getGenero().getCodigo();
 
-        if (usuario.getRol() != null) {
-            this.rol = usuario.getRol().name();
-        } else {
+        this.roles = usuario.getUsuarioRoles().stream()
+                .map(asignacion -> asignacion.getRol().getCodigo())
+                .distinct()
+                .sorted()
+                .collect(Collectors.toList());
+
+        // Compatibilidad temporal con el frontend que todavía lee "rol".
+        // Los permisos reales utilizan todos los roles asignados.
+        if (this.roles.contains("ADMIN")) {
+            this.rol = "ADMIN";
+        } else if (this.roles.contains("CLIENTE")) {
             this.rol = "CLIENTE";
+        } else if (this.roles.contains("TECNICO")) {
+            this.rol = "TECNICO";
+        } else {
+            this.rol = null;
         }
     }
 
@@ -69,6 +83,10 @@ public class UsuarioDTO {
     public boolean isActivo() { return activo; }
     public String getGenero() { return genero; }
     public String getRol() { return rol; }
+
+    public List<String> getRoles() {
+        return roles;
+    }
 
     public LocalDate getFechaNacimiento() { return fechaNacimiento; }
 

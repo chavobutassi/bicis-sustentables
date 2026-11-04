@@ -68,7 +68,7 @@ public class WebAuthorization {
                 .antMatchers(
                         HttpMethod.GET,
                         "/api/usuarios/actual"
-                ).hasAnyAuthority("ADMIN", "CLIENTE")
+                ).hasAnyAuthority("ADMIN", "CLIENTE", "TECNICO")
 
                 // 5. OPERACIONES PERMITIDAS PARA CLIENTES
                 .antMatchers(

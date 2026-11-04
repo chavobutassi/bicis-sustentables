@@ -13,8 +13,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -43,6 +45,12 @@ class RegistroUsuarioServiceTest {
 
     @Mock
     private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private RolRepository rolRepository;
+
+    @Mock
+    private UsuarioRolRepository usuarioRolRepository;
 
     @InjectMocks
     private RegistroUsuarioService registroUsuarioService;
@@ -78,6 +86,9 @@ class RegistroUsuarioServiceTest {
     void registraPersonaYCuentaConPasswordHasheada() {
         prepararGuardadoDePersona();
 
+        when(usuarioRolRepository.save(any(UsuarioRol.class)))
+                .thenAnswer(invocacion -> invocacion.getArgument(0));
+
         when(usuarioRepository.saveAndFlush(any(Usuario.class)))
                 .thenAnswer(invocacion -> {
                     Usuario usuario = invocacion.getArgument(0);
@@ -112,7 +123,7 @@ class RegistroUsuarioServiceTest {
         assertEquals("ana.perez", usuario.getNickname());
         assertEquals(HASH_SIMULADO, usuario.getPassword());
         assertNotEquals(datos.getPassword(), usuario.getPassword());
-        assertEquals(Rol.CLIENTE, usuario.getRol());
+        assertEquals(List.of("CLIENTE"), resultado.getRoles());
         assertTrue(usuario.isActivo());
 
         assertEquals(17, resultado.getId());
@@ -129,6 +140,28 @@ class RegistroUsuarioServiceTest {
                 .existsByTipoDocumento_IdAndPaisEmisor_IdAndNumeroDocumento(
                         1, 1, "00123456"
                 );
+
+        ArgumentCaptor<UsuarioRol> asignacionCaptor =
+                ArgumentCaptor.forClass(UsuarioRol.class);
+
+        verify(rolRepository).findByCodigo("CLIENTE");
+        verify(usuarioRolRepository).save(asignacionCaptor.capture());
+        verify(usuarioRolRepository).flush();
+
+        UsuarioRol asignacion = asignacionCaptor.getValue();
+
+        assertSame(usuario, asignacion.getUsuario());
+        assertEquals("CLIENTE", asignacion.getRol().getCodigo());
+        assertEquals(
+                Integer.valueOf(17),
+                asignacion.getId().getUsuarioId()
+        );
+        assertEquals(
+                Integer.valueOf(2),
+                asignacion.getId().getRolId()
+        );
+        assertEquals(1, usuario.getUsuarioRoles().size());
+        assertTrue(usuario.getUsuarioRoles().contains(asignacion));
     }
 
     @Test
@@ -253,6 +286,60 @@ class RegistroUsuarioServiceTest {
         verify(personaRepository).save(any(Persona.class));
     }
 
+    @Test
+    void rechazaRegistroSiNoExisteRolCliente() {
+        prepararCatalogos();
+
+        when(rolRepository.findByCodigo("CLIENTE"))
+                .thenReturn(Optional.empty());
+
+        IllegalStateException error = assertThrows(
+                IllegalStateException.class,
+                () -> registroUsuarioService.registrarUsuario(datos)
+        );
+
+        assertEquals(
+                "El rol CLIENTE no está configurado.",
+                error.getMessage()
+        );
+
+        comprobarQueNoSeGuardoNada();
+    }
+
+    @Test
+    void propagaConflictoAlPersistirLaAsignacion() {
+        prepararGuardadoDePersona();
+
+        when(usuarioRepository.saveAndFlush(any(Usuario.class)))
+                .thenAnswer(invocacion -> {
+                    Usuario usuario = invocacion.getArgument(0);
+                    usuario.setId(17);
+                    return usuario;
+                });
+
+        when(usuarioRolRepository.save(any(UsuarioRol.class)))
+                .thenAnswer(invocacion -> invocacion.getArgument(0));
+
+        DataIntegrityViolationException conflicto =
+                new DataIntegrityViolationException(
+                        "Conflicto simulado al guardar la asignación"
+                );
+
+        doThrow(conflicto).when(usuarioRolRepository).flush();
+
+        DataIntegrityViolationException resultado = assertThrows(
+                DataIntegrityViolationException.class,
+                () -> registroUsuarioService.registrarUsuario(datos)
+        );
+
+        assertSame(conflicto, resultado);
+
+        verify(personaRepository).save(any(Persona.class));
+        verify(usuarioRepository).saveAndFlush(any(Usuario.class));
+        verify(usuarioRolRepository).save(any(UsuarioRol.class));
+        verify(usuarioRolRepository).flush();
+    }
+
     private void prepararCatalogos() {
         when(generoRepository.findById(1)).thenReturn(Optional.of(genero));
         when(tipoDocumentoRepository.findById(1))
@@ -262,6 +349,12 @@ class RegistroUsuarioServiceTest {
 
     private void prepararGuardadoDePersona() {
         prepararCatalogos();
+
+        Rol rolCliente = new Rol("CLIENTE");
+        ReflectionTestUtils.setField(rolCliente, "id", 2);
+
+        when(rolRepository.findByCodigo("CLIENTE"))
+                .thenReturn(Optional.of(rolCliente));
 
         when(passwordEncoder.encode("Clave#123"))
                 .thenReturn(HASH_SIMULADO);
@@ -274,5 +367,6 @@ class RegistroUsuarioServiceTest {
         verify(personaRepository, never()).save(any(Persona.class));
         verify(usuarioRepository, never()).saveAndFlush(any(Usuario.class));
         verifyNoInteractions(passwordEncoder);
+        verifyNoInteractions(usuarioRolRepository);
     }
 }

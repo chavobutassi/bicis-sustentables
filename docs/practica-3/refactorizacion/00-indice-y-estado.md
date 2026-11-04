@@ -1,6 +1,6 @@
 # Refactorización de Prácticas III: índice y estado
 
-Actualizado: 2 de noviembre de 2026.
+Actualizado: 4 de noviembre de 2026.
 
 ## Cómo leer la documentación
 
@@ -8,6 +8,8 @@ Actualizado: 2 de noviembre de 2026.
 - **Propuesta o pendiente**: decisión todavía no confirmada. No debe implementarse silenciosamente como si estuviera aprobada.
 - **Implementada**: requiere evidencia de cambios concretos en el código. Una aprobación en el chat no equivale a implementación.
 - **Verificada**: requiere pruebas ejecutadas con su resultado y evidencia. Una prueba escrita en un documento no equivale a una prueba superada.
+
+El estado actual del código y sus verificaciones se consulta en [37-implementacion-entidades.md](37-implementacion-entidades.md). Los documentos de diseño conservan sus antecedentes y aprobaciones históricas; sus frases originales sobre implementación no reemplazan ese registro. Las mejoras surgidas de la comparación de copias están en [38-mejoras-futuras-desde-version-companero.md](38-mejoras-futuras-desde-version-companero.md) y siguen pendientes de confirmación.
 
 ## Fuentes que deben contrastarse antes de proponer cambios
 
@@ -19,9 +21,9 @@ Los documentos originales expresan la visión y sirven de referencia; sus difere
 
 El 28 de octubre de 2026 el usuario ratificó que el desarrollo principal es este repositorio local, guiado por las correcciones del PDF, DER y diccionario de estados y por las decisiones aprobadas en esta carpeta.
 
-El compañero mantiene otra copia local que, según el usuario, ya modifica el modelo y el frontend. Esa copia todavía no se inspeccionó: su ruta queda por proporcionar. No se considera implementación verificada del alcance aprobado ni sustituye automáticamente esta base de trabajo. Cuando se reciba, se comparará para identificar componentes reutilizables, diferencias y riesgos antes de integrar cambios.
+Se inspeccionaron en modo lectura las copias entrega-v3.2-registro-imagenes-admin y entrega-v3.6-correos-y-libro-diario. La comparación de la v3.6 con la v3.2 confirmó nuevas funciones de correo, comprobantes y cierre diario, pero conserva diferencias con las reglas aprobadas de este repositorio. No se integraron esas copias ni se reprodujeron sus pruebas durante la revisión. El documento 38 registra propuestas de mejora, no una autorización para sustituir esta base ni importar su SQL.
 
-La comprobación estática de esta carpeta conserva la rama local `main` en `ab91d6a`, el punto de entrada `TurismoSustentableApplication` con carga inicial mediante `CommandLineRunner` y el enum de roles actual con CLIENTE y ADMIN. No se consultó GitHub ni una base de datos para esta comprobación. Las nuevas reglas documentadas todavía no se trasladaron a Java; no se ejecutó ni integró la copia del compañero.
+Como referencia histórica, el diagnóstico anterior a la implementación tomó main en ab91d6a, su CommandLineRunner y el enum de rol único. Esa descripción no es el estado actual de la refactorización. El trabajo continúa en codex/refactorizacion-practicas-iii; el avance manual, la retirada de datos duplicados y carga inicial antigua, el registro mediante DTO y las comprobaciones efectivas están documentados en el archivo 37. Rol ya se incorporó como entidad; el enum CodigoRol permanece solo durante la adaptación de sus consumidores y no es el modelo final.
 
 ## Documentos y decisiones
 
@@ -63,6 +65,8 @@ La comprobación estática de esta carpeta conserva la rama local `main` en `ab9
 | [34-trazabilidad-ordenes-e-incidencias.md](34-trazabilidad-ordenes-e-incidencias.md) | Antecedente de campos del modelo de 28/52 previo a RN-TRZ-01 | Recomendación general retirada; consultar documentos 35/36 para estructura vigente y auditoría exclusiva de ADMIN |
 | [35-auditoria-admin-y-brechas-de-trazabilidad.md](35-auditoria-admin-y-brechas-de-trazabilidad.md) | Auditoría exclusiva de ADMIN y cuatro mejoras de trazabilidad | Las cuatro aprobadas e incorporadas al DER lógico; no implementadas en Java ni SQL |
 | [36-incorporacion-aprobada-trazabilidad-der.md](36-incorporacion-aprobada-trazabilidad-der.md) | RN-TRZ-01: campos, claves, relaciones, nulabilidad, fundamento del corte y pruebas previstas | Incorporación aprobada: 29 entidades y 55 FK/relaciones; se conservan las otras 25 entidades y se documentan controles que el dibujo no garantiza |
+| [37-implementacion-entidades.md](37-implementacion-entidades.md) | Registro de implementación manual, revisiones, pruebas y pendientes del backend | Fuente del estado efectivo del código; no declara completado todo el DER |
+| [38-mejoras-futuras-desde-version-companero.md](38-mejoras-futuras-desde-version-companero.md) | Mejoras técnicas, cola de correos, comprobantes, reporte financiero, último ADMIN y cierres opcionales | Propuestas documentadas a pedido; pendientes de confirmación; sin cambios al DER o Java |
 
 Modelo editable asociado: [der-v5-propuesto.mmd](der-v5-propuesto.mmd). No sustituye ni sobrescribe DERv4.txt.
 
@@ -104,6 +108,8 @@ Se aprobó agregar TIPO_MANTENIMIENTO y los cinco estados de la orden en RN-MAN-
 El 28 de octubre el usuario aprobó el reparto: ADMIN gestiona órdenes y asignaciones, TECNICO actúa sobre sus órdenes asignadas y ADMIN autoriza después la vuelta al servicio con revisión técnica favorable, estación activa válida y sin impedimentos. Se documentó en RN-MAN-02 y se actualizó la sección 7 del documento 08.
 
 Posteriormente aprobó RN-MAN-03: correctivo automático desde una devolución con falla, máximo de una orden abierta por bicicleta y posibilidad de CREADA sin técnico hasta la asignación administrativa. Después aprobó incorporar preventivas periódicas según el tipo como requisito de esta versión en RN-MAN-04, documentado en el archivo 19, y luego sus condiciones de aplicación. Los intervalos numéricos de ejemplo siguen sin ser definitivos.
+
+El 4 de noviembre aprobó ambas condiciones para inactivar a un técnico con órdenes: pausa administrativa excepcional de EN_PROCESO a PAUSADA y desasignación temporal de las órdenes abiertas, conservando sus estados en CREADA/PAUSADA y sin modificar las cerradas. Se incorporó en RN-MAN-02, sección 3.1, el diccionario de trabajo, las revisiones del modelo y ambos archivos Mermaid v5. La misma orden conserva trabajo e historia, la bicicleta sigue en mantenimiento y otro técnico activo debe ser asignado antes de iniciar/reanudar. Solo se precisó la condición de tecnico_id; no hay nuevas tablas, claves ni relaciones. Diseño aprobado, no implementación ni pruebas; ver la etapa 33 del diario 37.
 
 El 28 de octubre el usuario aprobó expresamente las condiciones de la sección 4 de RN-MAN-04: diferir la revisión de calendario durante un viaje o reserva ya aceptada, bloquear nuevas contrataciones vencidas, atender el preventivo sin duplicar un correctivo abierto, exigir revisión inicial cuando no haya referencia fiable y reservar los cambios de intervalo a ADMIN. Se actualizó la excepción al retorno normal a DISPONIBLE en las reglas relacionadas, sin extender la aprobación a pérdidas, accidentes ni otros permisos administrativos. Sus criterios CP-MAN-04-01 a CP-MAN-04-10 están documentados, no ejecutados. No se modificaron Java ni la base de datos.
 

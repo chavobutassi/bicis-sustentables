@@ -28,6 +28,8 @@ Iniciar o reanudar exige un técnico activo, con rol TECNICO y asignado a esa or
 
 El DER deberá permitir esa falta de asignación mientras la orden está CREADA. Esto no transforma en opcional la asignación requerida para ejecutar el trabajo.
 
+Ampliación aprobada el 4 de noviembre de 2026 en [RN-MAN-02, sección 3.1](17-permisos-y-transiciones-mantenimiento.md): al inactivar al técnico asignado, las órdenes abiertas quedan sin técnico; una EN_PROCESO pasa antes a PAUSADA mediante la pausa administrativa excepcional. CREADA y PAUSADA conservan su estado al desasignarse. PAUSADA puede así quedar pendiente de reasignación, sin permitir reanudar ni trabajar sin un técnico activo válido. No se agregan estados ni órdenes y no se modifican las cerradas.
+
 ## 4. Coherencia y límites
 
 Se mantienen los permisos, motivos, registro del resultado técnico y habilitación posterior por ADMIN de [RN-MAN-02](17-permisos-y-transiciones-mantenimiento.md). La vuelta al servicio sigue exigiendo revisión favorable vigente y ausencia de impedimentos; ni crear ni cancelar una orden libera por sí solo la bicicleta.
