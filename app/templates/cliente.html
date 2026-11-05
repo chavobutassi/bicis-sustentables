@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block titulo %}{{ c.apellido }}{% endblock %}
+{% block contenido %}
+<h1>{{ c.nombre }} {{ c.apellido }}</h1>
+<p class="sub">{{ c.tipo_documento }} {{ c.pais_documento }} {{ c.numero_documento }} · cliente desde {{ c.creado_en|fecha('%d/%m/%Y') }}</p>
+<div class="tarjeta"><dl class="grilla">
+  <div><dt>Correo</dt><dd>{{ c.email or '—' }}</dd></div><div><dt>Teléfono</dt><dd>{{ c.telefono or '—' }}</dd></div>
+</dl></div>
+<h2>Alquileres</h2>
+<div class="tabla-scroll"><table>
+  <tr><th>Alquiler</th><th>Salida</th><th>Estado</th><th class="num">Bicis</th><th class="num">Total</th><th class="num">Saldo</th></tr>
+  {% for a in alquileres %}
+  <tr><td><a href="/alquileres/{{ a.id }}">#{{ a.id }}</a></td><td>{{ a.salida_real|fecha }}</td><td>{{ a.estado }}</td>
+      <td class="num">{{ a.bicis }}</td><td class="num">{{ a.total|pesos }}</td>
+      <td class="num {% if a.saldo and a.saldo > 0 %}mal-texto{% endif %}">{{ a.saldo|pesos }}</td></tr>
+  {% else %}<tr><td colspan="6" class="suave">Sin alquileres.</td></tr>{% endfor %}
+</table></div>
+<h2>Reservas</h2>
+<div class="tabla-scroll"><table>
+  <tr><th>Reserva</th><th>Inicio</th><th>Estación</th><th>Estado</th></tr>
+  {% for r in reservas %}<tr><td><a href="/reservas/{{ r.id }}">#{{ r.id }}</a></td><td>{{ r.inicio_previsto|fecha }}</td><td>{{ r.estacion }}</td><td>{{ r.estado }}</td></tr>
+  {% else %}<tr><td colspan="4" class="suave">Sin reservas.</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

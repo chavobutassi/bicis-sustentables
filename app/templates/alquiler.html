@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block titulo %}Alquiler #{{ a.id }}{% endblock %}
+{% block contenido %}
+<h1>Alquiler #{{ a.id }} <span class="etiqueta {% if a.estado == 'EN_CURSO' %}aviso{% elif a.estado == 'ANULADO' %}mal{% endif %}">{{ a.estado }}</span></h1>
+<p class="sub"><a href="/clientes/{{ a.cliente_id }}">{{ a.cliente }}</a> · retiro en {{ a.estacion }} · atendió {{ a.operador }}</p>
+{% if ok %}<p class="aviso-ok" role="status">{{ ok }}</p>{% endif %}
+{% if error %}<p class="aviso-error" role="alert">{{ error }}</p>{% endif %}
+<div class="tarjeta"><dl class="grilla">
+  <div><dt>Salida</dt><dd>{{ a.salida_real|fecha }}</dd></div>
+  <div><dt>Debe volver</dt><dd>{{ a.fin_previsto|fecha }}</dd></div>
+  <div><dt>Retorno</dt><dd>{{ a.retorno_real|fecha }}</dd></div>
+  {% if a.reserva_id %}<div><dt>Reserva</dt><dd><a href="/reservas/{{ a.reserva_id }}">#{{ a.reserva_id }}</a></dd></div>{% endif %}
+  {% if saldo %}<div><dt>Total</dt><dd>{{ saldo.total|pesos }}</dd></div><div><dt>Pagado</dt><dd>{{ saldo.pagado|pesos }}</dd></div>
+  <div><dt>Saldo</dt><dd class="{% if saldo.saldo > 0 %}mal-texto{% endif %}">{{ saldo.saldo|pesos }}</dd></div>{% endif %}
+</dl>{% if a.observaciones %}<p class="suave">{{ a.observaciones }}</p>{% endif %}
+{% if a.motivo_anulacion %}<p class="mal-texto">Anulado: {{ a.motivo_anulacion }}</p>{% endif %}</div>
+
+<h2>Bicicletas</h2>
+<div class="tabla-scroll"><table>
+  <tr><th>Bicicleta</th><th>Modalidad</th><th class="num ocultar-movil">Precio</th><th>Devolución</th><th class="num">Importe</th></tr>
+  {% for d in detalles %}
+  <tr><td><a href="/bicicletas/{{ d.bicicleta_id }}">{{ d.codigo }}</a> · {{ d.tipo }}</td><td>{{ d.modalidad }}</td>
+      <td class="num ocultar-movil">{{ d.precio_hora|pesos }}/h · {{ d.precio_dia|pesos }}/día</td>
+      <td>{% if d.devuelta_en %}{{ d.devuelta_en|fecha }} en {{ d.estacion_devolucion }}
+            {% if d.estado_devolucion == 'CON_DANIO' %}<span class="etiqueta mal">con daño</span>{% endif %}
+          {% elif d.anulado_en %}Anulada
+          {% elif puede %}
+          <form method="post" action="/alquileres/{{ a.id }}/devolver" class="devolucion">
+            <input type="hidden" name="csrf" value="{{ usuario.csrf }}"><input type="hidden" name="detalle_id" value="{{ d.id }}">
+            <div class="fila">
+              <select name="destino" aria-label="Estación de devolución">{% for e in estaciones %}<option value="{{ e.id }}" {% if e.id == a.ubicacion_retiro_id %}selected{% endif %}>{{ e.nombre }}</option>{% endfor %}</select>
+              <select name="resultado" aria-label="Estado"><option value="OK">Sin daños</option><option value="CON_DANIO">Con daño</option></select>
+            </div>
+            <input name="observaciones" maxlength="300" placeholder="Observaciones (obligatorias si hay daño)" aria-label="Observaciones">
+            <details><summary>Si volvió con daño</summary>
+              <div class="fila">
+                <select name="tipo" aria-label="Tipo"><option value="FALLA">Falla mecánica</option><option value="DANIO">Daño del cliente</option><option value="ACCIDENTE">Accidente</option></select>
+                <select name="severidad" aria-label="Severidad"><option>LEVE</option><option>MODERADA</option><option>GRAVE</option></select>
+                <select name="sistema" aria-label="Sistema"><option value="">Sistema…</option>
+                  {% for s in ['FRENOS','TRANSMISION','NEUMATICOS','RUEDAS','CUADRO','ELECTRICO','SUSPENSION','OTRO'] %}<option>{{ s }}</option>{% endfor %}</select>
+              </div>
+              <input name="cargo" inputmode="decimal" placeholder="Cargo al cliente (opcional)" aria-label="Cargo">
+            </details>
+            <button type="submit">Registrar devolución</button>
+          </form>
+          {% else %}Pendiente{% endif %}</td>
+      <td class="num">{{ d.importe|pesos }}</td></tr>
+  {% endfor %}
+</table></div>
+
+<h2>Cargos extra</h2>
+{% if cargos %}<div class="tabla-scroll"><table>
+  <tr><th>Concepto</th><th>Descripción</th><th class="num">Monto</th></tr>
+  {% for c in cargos %}<tr><td>{{ c.concepto }}</td><td>{{ c.descripcion or '' }}</td><td class="num">{{ c.monto|pesos }}</td></tr>{% endfor %}
+</table></div>{% else %}<p class="suave">Sin cargos.</p>{% endif %}
+{% if puede and a.estado != 'ANULADO' %}
+<form class="filtros" method="post" action="/alquileres/{{ a.id }}/cargo">
+  <input type="hidden" name="csrf" value="{{ usuario.csrf }}">
+  <div><label for="concepto">Concepto</label><select id="concepto" name="concepto"><option value="LIMPIEZA">Limpieza</option><option value="DANIO">Daño</option><option value="PERDIDA">Pérdida</option><option value="OTRO">Otro</option></select></div>
+  <div><label for="cmonto">Monto</label><input id="cmonto" name="monto" inputmode="decimal" required></div>
+  <div><label for="cdesc">Descripción</label><input id="cdesc" name="descripcion" maxlength="200"></div>
+  <button class="sec" type="submit">Agregar cargo</button>
+</form>
+{% endif %}
+
+<h2>Pagos</h2>
+{% if pagos %}<div class="tabla-scroll"><table>
+  <tr><th>Fecha</th><th>Tipo</th><th>Medio</th><th>Estado</th><th class="num">Monto</th></tr>
+  {% for p in pagos %}<tr><td>{{ p.creado_en|fecha }}</td><td>{{ p.tipo }}</td><td>{{ p.medio }}</td><td>{{ p.estado }}</td><td class="num">{{ p.monto|pesos }}</td></tr>{% endfor %}
+</table></div>{% else %}<p class="suave">Sin pagos.</p>{% endif %}
+{% if puede and saldo and saldo.saldo > 0 and a.estado != 'ANULADO' %}
+<form class="filtros" method="post" action="/alquileres/{{ a.id }}/cobrar">
+  <input type="hidden" name="csrf" value="{{ usuario.csrf }}">
+  <div><label for="monto">Cobrar</label><input id="monto" name="monto" inputmode="decimal" value="{{ saldo.saldo }}" required></div>
+  <div><label for="medio">Medio</label><select id="medio" name="medio"><option value="EFECTIVO">Efectivo</option><option value="TARJETA">Tarjeta</option><option value="TRANSFERENCIA">Transferencia</option><option value="BILLETERA_VIRTUAL">Billetera virtual</option></select></div>
+  <div><label for="referencia">Referencia</label><input id="referencia" name="referencia" maxlength="40"></div>
+  <button type="submit">Registrar cobro</button>
+</form>
+{% endif %}
+
+{% if puede and a.estado == 'EN_CURSO' %}
+<details><summary>Anular este alquiler (cargado por error)</summary>
+<form class="filtros" method="post" action="/alquileres/{{ a.id }}/anular">
+  <input type="hidden" name="csrf" value="{{ usuario.csrf }}">
+  <div><label for="motivo">Motivo</label><input id="motivo" name="motivo" maxlength="200" required></div>
+  <button class="sec" type="submit">Anular</button>
+</form><p class="ayuda">Solo se puede anular si todavía no se devolvió ninguna bicicleta.</p></details>
+{% endif %}
+{% endblock %}

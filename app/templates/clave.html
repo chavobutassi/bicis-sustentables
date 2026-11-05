@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block titulo %}Contraseña{% endblock %}
+{% block contenido %}
+<h1>Cambiar contraseña</h1>
+<p class="sub">Mínimo 12 caracteres, con mayúsculas, minúsculas y un número.</p>
+{% if error %}<p class="aviso-error" role="alert">{{ error }}</p>{% endif %}
+<form class="formulario" method="post" action="/clave">
+  <input type="hidden" name="csrf" value="{{ usuario.csrf }}">
+  <div class="campo"><label for="actual">Contraseña actual</label>
+    <input id="actual" name="actual" type="password" autocomplete="current-password" required></div>
+  <div class="campo"><label for="nueva">Contraseña nueva</label>
+    <input id="nueva" name="nueva" type="password" autocomplete="new-password" required minlength="12"></div>
+  <div class="campo"><label for="repetida">Repetir contraseña nueva</label>
+    <input id="repetida" name="repetida" type="password" autocomplete="new-password" required minlength="12"></div>
+  <button type="submit">Guardar</button>
+</form>
+{% endblock %}

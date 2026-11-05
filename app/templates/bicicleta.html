@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block titulo %}{{ b.codigo }}{% endblock %}
+{% block contenido %}
+<h1>{{ b.codigo }} <span class="etiqueta {{ b.estado_codigo }}">{{ b.estado }}</span></h1>
+<p class="sub">{{ b.tipo }} · {{ b.marca }} {{ b.modelo }} · talle {{ b.talle }}</p>
+{% if ok %}<p class="aviso-ok" role="status">{{ ok }}</p>{% endif %}
+{% if error %}<p class="aviso-error" role="alert">{{ error }}</p>{% endif %}
+<div class="tarjeta"><dl class="grilla">
+  <div><dt>Estación base</dt><dd>{{ b.base }}</dd></div>
+  <div><dt>Dónde está</dt><dd>{{ b.ubicacion or 'En la calle' }}</dd></div>
+  <div><dt>Horas de uso</dt><dd>{{ b.horas_uso|numero(1) }}</dd></div>
+  <div><dt>Alquileres</dt><dd>{{ b.usos }}</dd></div>
+  <div><dt>Alta</dt><dd>{{ b.fecha_alta|fecha('%d/%m/%Y') }}</dd></div>
+  {% if b.fecha_baja %}<div><dt>Baja</dt><dd>{{ b.fecha_baja|fecha('%d/%m/%Y') }}</dd></div>{% endif %}
+</dl></div>
+
+<h2>Mantenimiento planificado</h2>
+<div class="tabla-scroll"><table>
+  <tr><th>Tarea</th><th class="num">Horas restantes</th><th class="num">Días restantes</th><th class="num ocultar-movil">Horas por día</th><th>Fecha estimada</th><th></th></tr>
+  {% for s in servicios %}
+  <tr><td>{{ s.tarea }}</td>
+      <td class="num {% if s.horas_restantes is not none and s.horas_restantes < 0 %}mal-texto{% endif %}">{{ s.horas_restantes|numero(1) }}</td>
+      <td class="num {% if s.dias_restantes is not none and s.dias_restantes < 0 %}mal-texto{% endif %}">{{ s.dias_restantes|numero }}</td>
+      <td class="num ocultar-movil">{{ s.horas_por_dia|numero(2) }}</td><td>{{ s.fecha_estimada|fecha('%d/%m/%Y') }}</td>
+      <td>{% if puede_taller and b.estado_codigo in ('DISPONIBLE','FUERA_DE_SERVICIO') %}
+        <form method="post" action="/taller/abrir"><input type="hidden" name="csrf" value="{{ usuario.csrf }}">
+          <input type="hidden" name="bicicleta_id" value="{{ b.id }}"><input type="hidden" name="plan_id" value="{{ s.plan_id }}">
+          <button class="sec" type="submit">Abrir orden</button></form>{% endif %}</td></tr>
+  {% else %}<tr><td colspan="6" class="suave">Sin plan de mantenimiento.</td></tr>{% endfor %}
+</table></div>
+
+{% if puede_taller and b.estado_codigo in ('DISPONIBLE','FUERA_DE_SERVICIO','EN_MANTENIMIENTO') %}
+<h2>Abrir reparación</h2>
+<form class="formulario" method="post" action="/taller/abrir">
+  <input type="hidden" name="csrf" value="{{ usuario.csrf }}"><input type="hidden" name="bicicleta_id" value="{{ b.id }}">
+  <div class="campo"><label for="descripcion">Qué hay que arreglar</label>
+    <input id="descripcion" name="descripcion" maxlength="300" required></div>
+  <button type="submit">Abrir orden correctiva</button>
+</form>
+{% endif %}
+
+<h2>Órdenes de taller</h2>
+<div class="tabla-scroll"><table>
+  <tr><th>Orden</th><th>Tipo</th><th>Estado</th><th>Abierta</th><th>Cerrada</th><th class="num">Costo</th></tr>
+  {% for o in ordenes %}
+  <tr><td>#{{ o.id }} {{ o.descripcion }}</td><td>{{ o.tipo }}</td><td><span class="etiqueta {% if o.estado_codigo != 'CERRADA' %}aviso{% endif %}">{{ o.estado }}</span></td>
+      <td>{{ o.abierta_en|fecha }}</td><td>{{ o.cerrada_en|fecha }}</td><td class="num">{{ o.costo_total|pesos }}</td></tr>
+  {% else %}<tr><td colspan="6" class="suave">Sin órdenes.</td></tr>{% endfor %}
+</table></div>
+
+<h2>Incidencias</h2>
+<div class="tabla-scroll"><table>
+  <tr><th>Fecha</th><th>Tipo</th><th>Severidad</th><th>Sistema</th><th>Descripción</th><th>Resuelta</th></tr>
+  {% for i in incidencias %}
+  <tr><td>{{ i.ocurrida_en|fecha }}</td><td>{{ i.tipo }}</td><td>{{ i.severidad }}</td><td>{{ i.sistema or '—' }}</td>
+      <td>{{ i.descripcion }}</td><td>{{ i.resuelta_en|fecha }}</td></tr>
+  {% else %}<tr><td colspan="6" class="suave">Sin incidencias.</td></tr>{% endfor %}
+</table></div>
+
+<h2>Últimos alquileres</h2>
+<div class="tabla-scroll"><table>
+  <tr><th>Alquiler</th><th>Cliente</th><th>Salida</th><th>Devuelta</th><th class="num">Importe</th></tr>
+  {% for a in alquileres %}
+  <tr><td><a href="/alquileres/{{ a.alquiler_id }}">#{{ a.alquiler_id }}</a></td><td>{{ a.cliente }}</td><td>{{ a.salida_real|fecha }}</td>
+      <td>{{ a.devuelta_en|fecha }}{% if a.estado_devolucion == 'CON_DANIO' %} <span class="etiqueta mal">con daño</span>{% endif %}</td>
+      <td class="num">{{ a.importe|pesos }}</td></tr>
+  {% else %}<tr><td colspan="5" class="suave">Todavía no se alquiló.</td></tr>{% endfor %}
+</table></div>
+
+<h2>Historial de estados</h2>
+<div class="tabla-scroll"><table>
+  <tr><th>Cuándo</th><th>De</th><th>A</th><th>Motivo</th></tr>
+  {% for h in historial %}
+  <tr><td>{{ h.cambiado_en|fecha }}</td><td>{{ h.antes or '—' }}</td><td>{{ h.despues }}</td><td>{{ h.motivo or '' }}</td></tr>
+  {% endfor %}
+</table></div>
+{% endblock %}

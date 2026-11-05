@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block titulo %}Clientes{% endblock %}
+{% block contenido %}
+<h1>Clientes</h1>
+<form class="filtros" method="get" action="/clientes">
+  <div><label for="q">Buscar por documento, apellido, nombre o correo</label><input id="q" name="q" value="{{ q }}" maxlength="60" required></div>
+  <button type="submit">Buscar</button>
+</form>
+{% if q %}
+<div class="tabla-scroll"><table>
+  <tr><th>Cliente</th><th>Documento</th><th class="ocultar-movil">Correo</th><th class="num">Alquileres</th></tr>
+  {% for c in clientes %}
+  <tr><td><a href="/clientes/{{ c.id }}">{{ c.apellido }}, {{ c.nombre }}</a></td>
+      <td>{{ c.tipo_documento }} {{ c.pais_documento }} {{ c.numero_documento }}</td>
+      <td class="ocultar-movil">{{ c.email or '—' }}</td><td class="num">{{ c.alquileres }}</td></tr>
+  {% else %}<tr><td colspan="4" class="suave">Sin resultados.</td></tr>{% endfor %}
+</table></div>
+{% endif %}
+{% endblock %}

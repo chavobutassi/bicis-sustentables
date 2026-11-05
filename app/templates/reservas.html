@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block titulo %}Reservas{% endblock %}
+{% block contenido %}
+<h1>Reservas</h1>
+{% if ok %}<p class="aviso-ok" role="status">{{ ok }}</p>{% endif %}
+<div class="acciones"><a class="boton" href="/reservas/nueva">Nueva reserva</a></div>
+<h2>Vigentes</h2>
+<div class="tabla-scroll"><table>
+  <tr><th>Reserva</th><th>Inicio</th><th>Estación</th><th>Cliente</th><th>Pedido</th><th>Estado</th></tr>
+  {% for r in abiertas %}
+  <tr><td><a href="/reservas/{{ r.id }}">#{{ r.id }}</a></td><td class="{% if r.por_vencer %}mal-texto{% endif %}">{{ r.inicio_previsto|fecha }}</td>
+      <td>{{ r.estacion }}</td><td>{{ r.cliente }}</td><td>{{ r.pedido }}</td>
+      <td><span class="etiqueta {% if r.estado == 'PENDIENTE' %}aviso{% endif %}">{{ r.estado }}</span></td></tr>
+  {% else %}<tr><td colspan="6" class="suave">No hay reservas vigentes.</td></tr>{% endfor %}
+</table></div>
+<h2>Cerradas recientemente</h2>
+<div class="tabla-scroll"><table>
+  <tr><th>Reserva</th><th>Cliente</th><th>Estado</th><th>Motivo</th></tr>
+  {% for r in recientes %}<tr><td><a href="/reservas/{{ r.id }}">#{{ r.id }}</a></td><td>{{ r.cliente }}</td><td>{{ r.estado }}</td><td>{{ r.motivo_cierre or '' }}</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block titulo %}Nueva reserva{% endblock %}
+{% block contenido %}
+<h1>Nueva reserva</h1>
+<p class="sub">Se reserva por tipo de bicicleta y estación; la unidad se asigna al retirar. La base controla que haya cupo.</p>
+{% if error %}<p class="aviso-error" role="alert">{{ error }}</p>{% endif %}
+<form method="post" action="/reservas/nueva" class="formulario ancho">
+  <input type="hidden" name="csrf" value="{{ usuario.csrf }}">
+  {% include "_cliente.html" %}
+  <fieldset class="grupo"><legend>Retiro</legend>
+    <div class="fila">
+      <div class="campo"><label for="est">Estación</label><select id="est" name="est">
+        {% for e in estaciones %}<option value="{{ e.id }}" {% if v.est|string == e.id|string %}selected{% endif %}>{{ e.nombre }}</option>{% endfor %}</select></div>
+      <div class="campo"><label for="canal">Canal</label><select id="canal" name="canal">
+        <option value="MOSTRADOR" {% if v.canal != 'TELEFONO' %}selected{% endif %}>Mostrador</option><option value="TELEFONO" {% if v.canal == 'TELEFONO' %}selected{% endif %}>Teléfono</option></select></div>
+    </div>
+    <div class="fila">
+      <div class="campo"><label for="inicio">Desde</label><input id="inicio" name="inicio" type="datetime-local" value="{{ v.inicio or '' }}" required></div>
+      <div class="campo"><label for="fin">Hasta</label><input id="fin" name="fin" type="datetime-local" value="{{ v.fin or '' }}" required></div>
+    </div>
+  </fieldset>
+  <fieldset class="grupo"><legend>Bicicletas pedidas</legend>
+    <div class="fila">
+    {% for t in tipos %}
+      <div class="campo"><label for="tipo_{{ t.id }}">{{ t.nombre }}</label>
+        <input id="tipo_{{ t.id }}" name="tipo_{{ t.id }}" type="number" min="0" max="10" value="{{ v['tipo_' ~ t.id] or 0 }}">
+        <div class="ayuda">{{ t.precio_hora|pesos }}/h · {{ t.precio_dia|pesos }}/día</div></div>
+    {% endfor %}
+    </div>
+  </fieldset>
+  <fieldset class="grupo"><legend>Seña (opcional)</legend>
+    <div class="fila">
+      <div class="campo"><label for="sena">Monto</label><input id="sena" name="sena" inputmode="decimal" value="{{ v.sena or '' }}"></div>
+      <div class="campo"><label for="medio">Medio</label><select id="medio" name="medio"><option value="EFECTIVO">Efectivo</option><option value="TARJETA">Tarjeta</option><option value="TRANSFERENCIA">Transferencia</option><option value="BILLETERA_VIRTUAL">Billetera virtual</option></select></div>
+    </div>
+    <p class="ayuda">Con la seña la reserva queda confirmada. Sin seña queda pendiente.</p>
+  </fieldset>
+  <button type="submit">Crear reserva</button>
+</form>
+{% endblock %}

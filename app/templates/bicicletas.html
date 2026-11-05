@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block titulo %}Bicicletas{% endblock %}
+{% block contenido %}
+<h1>Bicicletas</h1>
+<form class="filtros" method="get" action="/bicicletas">
+  <div><label for="q">Buscar</label><input id="q" name="q" value="{{ q }}" maxlength="50" placeholder="Código, marca, tipo…"></div>
+  <div><label for="estado">Estado</label>
+    <select id="estado" name="estado"><option value="">Todas (sin bajas)</option>
+      {% for e in estados %}<option value="{{ e.codigo }}" {% if e.codigo == estado %}selected{% endif %}>{{ e.nombre }}</option>{% endfor %}
+    </select></div>
+  <div><label><input type="checkbox" name="vencidas" value="1" style="width:auto" {% if vencidas %}checked{% endif %}> Solo con servicio vencido</label></div>
+  <button type="submit">Filtrar</button>
+</form>
+<div class="tabla-scroll"><table>
+  <tr><th>Código</th><th>Tipo</th><th class="ocultar-movil">Modelo</th><th>Estado</th><th>Dónde está</th><th class="num">Horas</th><th class="num">Vencidos</th></tr>
+  {% for b in bicis %}
+  <tr><td><a href="/bicicletas/{{ b.id }}">{{ b.codigo }}</a></td><td>{{ b.tipo }}</td>
+      <td class="ocultar-movil">{{ b.marca }} {{ b.modelo }}</td>
+      <td><span class="etiqueta {{ b.estado_codigo }}">{{ b.estado }}</span></td><td>{{ b.ubicacion }}</td>
+      <td class="num">{{ b.horas_uso|numero(1) }}</td>
+      <td class="num {% if b.vencidos %}mal-texto{% endif %}">{{ b.vencidos }}</td></tr>
+  {% else %}<tr><td colspan="7" class="suave">Sin resultados.</td></tr>
+  {% endfor %}
+</table></div>
+{% endblock %}

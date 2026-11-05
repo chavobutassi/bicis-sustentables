@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block titulo %}Tablero{% endblock %}
+{% block contenido %}
+<h1>Tablero</h1>
+<p class="sub">Estado de la flota en este momento.</p>
+{% if ok %}<p class="aviso-ok" role="status">{{ ok }}</p>{% endif %}
+<div class="cifras">
+  <div class="cifra"><b>{{ resumen.disponibles }}</b><span>Disponibles</span></div>
+  <div class="cifra"><b>{{ resumen.alquiladas }}</b><span>En la calle</span></div>
+  <div class="cifra"><b>{{ resumen.en_taller }}</b><span>En taller o a revisar</span></div>
+  <div class="cifra {% if resumen.demorados %}alerta{% endif %}"><b>{{ resumen.demorados }}</b><span>Alquileres demorados</span></div>
+  <div class="cifra"><b>{{ resumen.reservas_hoy }}</b><span>Reservas de hoy</span></div>
+  <div class="cifra {% if resumen.con_servicio_vencido %}alerta{% endif %}"><b>{{ resumen.con_servicio_vencido }}</b><span>Bicis con servicio vencido</span></div>
+  <div class="cifra"><b>{{ resumen.ingresos_hoy|pesos }}</b><span>Cobrado por alquileres hoy</span></div>
+</div>
+<div class="acciones">
+  {% if usuario.roles.intersection(['ADMIN','MOSTRADOR']) %}<a class="boton" href="/alquileres/nuevo">Nuevo alquiler</a><a class="boton sec" href="/reservas/nueva">Nueva reserva</a>{% endif %}
+</div>
+
+<h2>Disponibilidad por estación</h2>
+<div class="tabla-scroll"><table>
+  <tr><th>Estación</th><th>Tipo</th><th class="num">Flota</th><th class="num">Disponibles</th><th class="num">Alquiladas</th><th class="num">En taller</th></tr>
+  {% for d in disponibilidad %}
+  <tr><td>{{ d.estacion }}</td><td>{{ d.tipo }}</td><td class="num">{{ d.flota }}</td>
+      <td class="num">{{ d.disponibles }}</td><td class="num">{{ d.alquiladas }}</td><td class="num">{{ d.en_taller }}</td></tr>
+  {% endfor %}
+</table></div>
+
+<h2>Alquileres demorados</h2>
+{% if demorados %}
+<div class="tabla-scroll"><table>
+  <tr><th>Alquiler</th><th>Cliente</th><th>Debía volver</th><th class="num">Demora (h)</th><th class="num">Bicis afuera</th></tr>
+  {% for d in demorados %}
+  <tr><td><a href="/alquileres/{{ d.alquiler_id }}">#{{ d.alquiler_id }}</a></td><td>{{ d.cliente }}</td>
+      <td>{{ d.fin_previsto|fecha }}</td><td class="num mal-texto">{{ d.horas_de_demora|numero(1) }}</td>
+      <td class="num">{{ d.bicicletas_pendientes }}</td></tr>
+  {% endfor %}
+</table></div>
+{% else %}<p class="suave">No hay alquileres demorados.</p>{% endif %}
+
+<h2>Reservas de las próximas 24 horas</h2>
+{% if reservas %}
+<div class="tabla-scroll"><table>
+  <tr><th>Reserva</th><th>Inicio</th><th>Estación</th><th>Cliente</th><th>Pedido</th><th>Estado</th></tr>
+  {% for r in reservas %}
+  <tr><td><a href="/reservas/{{ r.id }}">#{{ r.id }}</a></td><td>{{ r.inicio_previsto|fecha }}</td><td>{{ r.estacion }}</td>
+      <td>{{ r.cliente }}</td><td>{{ r.pedido }}</td><td><span class="etiqueta {% if r.estado == 'PENDIENTE' %}aviso{% endif %}">{{ r.estado }}</span></td></tr>
+  {% endfor %}
+</table></div>
+{% else %}<p class="suave">No hay reservas para las próximas 24 horas.</p>{% endif %}
+{% endblock %}

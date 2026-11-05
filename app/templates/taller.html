@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block titulo %}Taller{% endblock %}
+{% block contenido %}
+<h1>Taller</h1>
+{% if ok %}<p class="aviso-ok" role="status">{{ ok }}</p>{% endif %}
+{% if error %}<p class="aviso-error" role="alert">{{ error }}</p>{% endif %}
+<h2>Órdenes abiertas</h2>
+{% for o in ordenes %}
+<div class="tarjeta orden">
+  <p><b>#{{ o.id }}</b> · <a href="/bicicletas/{{ o.bicicleta_id }}">{{ o.codigo }}</a> · {{ o.tipo }} ·
+     <span class="etiqueta aviso">{{ o.estado }}</span> · abierta {{ o.abierta_en|fecha }} · {{ o.tecnico or 'sin asignar' }}</p>
+  <p>{{ o.descripcion }}</p>
+  {% if o.estado_codigo == 'ABIERTA' %}
+  <form method="post" action="/taller/{{ o.id }}/iniciar"><input type="hidden" name="csrf" value="{{ usuario.csrf }}"><button type="submit">Empezar el trabajo</button></form>
+  {% else %}
+  <form method="post" action="/taller/{{ o.id }}/cerrar">
+    <input type="hidden" name="csrf" value="{{ usuario.csrf }}">
+    <div class="campo"><label for="items{{ o.id }}">Ítems (uno por línea: descripción | cantidad | costo unitario)</label>
+      <textarea id="items{{ o.id }}" name="items" placeholder="Mano de obra | 1,5 | 9000&#10;Cámara | 1 | 3500"></textarea></div>
+    <button type="submit">Cerrar orden</button>
+  </form>
+  {% endif %}
+</div>
+{% else %}<p class="suave">No hay órdenes abiertas.</p>{% endfor %}
+
+<h2>Servicios vencidos en bicicletas disponibles</h2>
+<div class="tabla-scroll"><table>
+  <tr><th>Bicicleta</th><th>Tarea</th><th class="num">Horas restantes</th><th class="num">Días restantes</th><th></th></tr>
+  {% for p in pendientes %}
+  <tr><td><a href="/bicicletas/{{ p.bicicleta_id }}">{{ p.codigo }}</a></td><td>{{ p.tarea }}</td>
+      <td class="num {% if p.horas_restantes is not none and p.horas_restantes < 0 %}mal-texto{% endif %}">{{ p.horas_restantes|numero(1) }}</td>
+      <td class="num {% if p.dias_restantes is not none and p.dias_restantes < 0 %}mal-texto{% endif %}">{{ p.dias_restantes|numero }}</td>
+      <td><form method="post" action="/taller/abrir"><input type="hidden" name="csrf" value="{{ usuario.csrf }}">
+        <input type="hidden" name="bicicleta_id" value="{{ p.bicicleta_id }}"><input type="hidden" name="plan_id" value="{{ p.plan_id }}">
+        <button class="sec" type="submit">Abrir orden</button></form></td></tr>
+  {% else %}<tr><td colspan="5" class="suave">Nada vencido.</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

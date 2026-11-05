@@ -1,0 +1,10 @@
+.git
+data
+db
+docs
+tests
+generador
+scripts
+*.md
+.env*
+__pycache__

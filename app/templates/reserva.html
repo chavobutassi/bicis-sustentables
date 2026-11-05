@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block titulo %}Reserva #{{ r.id }}{% endblock %}
+{% block contenido %}
+<h1>Reserva #{{ r.id }} <span class="etiqueta {% if r.estado == 'PENDIENTE' %}aviso{% elif r.estado in ('CANCELADA','VENCIDA') %}mal{% endif %}">{{ r.estado }}</span></h1>
+<p class="sub"><a href="/clientes/{{ r.cliente_id }}">{{ r.cliente }}</a> · {{ r.estacion }} · canal {{ r.canal }}</p>
+{% if ok %}<p class="aviso-ok" role="status">{{ ok }}</p>{% endif %}
+{% if error %}<p class="aviso-error" role="alert">{{ error }}</p>{% endif %}
+<div class="tarjeta"><dl class="grilla">
+  <div><dt>Desde</dt><dd>{{ r.inicio_previsto|fecha }}</dd></div><div><dt>Hasta</dt><dd>{{ r.fin_previsto|fecha }}</dd></div>
+  <div><dt>Creada</dt><dd>{{ r.creada_en|fecha }}</dd></div>
+  {% if r.cerrada_en %}<div><dt>Cerrada</dt><dd>{{ r.cerrada_en|fecha }}</dd></div>{% endif %}
+</dl>{% if r.motivo_cierre %}<p class="suave">{{ r.motivo_cierre }}</p>{% endif %}</div>
+<h2>Pedido</h2>
+<ul>{% for p in pedido %}<li>{{ p.cantidad }} × {{ p.tipo }}</li>{% endfor %}</ul>
+{% if alquiler %}<p><a href="/alquileres/{{ alquiler.id }}">Ver el alquiler #{{ alquiler.id }}</a></p>{% endif %}
+<h2>Pagos</h2>
+{% if pagos %}<div class="tabla-scroll"><table>
+  <tr><th>Fecha</th><th>Tipo</th><th>Medio</th><th class="num">Monto</th></tr>
+  {% for p in pagos %}<tr><td>{{ p.creado_en|fecha }}</td><td>{{ p.tipo }}</td><td>{{ p.medio }}</td><td class="num">{{ p.monto|pesos }}</td></tr>{% endfor %}
+</table></div>{% else %}<p class="suave">Sin pagos.</p>{% endif %}
+
+{% if r.estado == 'PENDIENTE' %}
+<form class="filtros" method="post" action="/reservas/{{ r.id }}/sena">
+  <input type="hidden" name="csrf" value="{{ usuario.csrf }}">
+  <div><label for="monto">Seña</label><input id="monto" name="monto" inputmode="decimal" required></div>
+  <div><label for="medio">Medio</label><select id="medio" name="medio"><option value="EFECTIVO">Efectivo</option><option value="TARJETA">Tarjeta</option><option value="TRANSFERENCIA">Transferencia</option><option value="BILLETERA_VIRTUAL">Billetera virtual</option></select></div>
+  <button type="submit">Registrar seña</button>
+</form>
+{% endif %}
+{% if r.estado in ('PENDIENTE','CONFIRMADA') %}
+<div class="acciones"><a class="boton" href="/alquileres/nuevo?reserva={{ r.id }}">Retirar bicicletas</a></div>
+<details><summary>Cancelar la reserva</summary>
+<form class="filtros" method="post" action="/reservas/{{ r.id }}/cancelar">
+  <input type="hidden" name="csrf" value="{{ usuario.csrf }}">
+  <div><label for="motivo">Motivo</label><input id="motivo" name="motivo" maxlength="180" required></div>
+  <div><label><input type="checkbox" name="devolver" value="1" style="width:auto"> Devolver la seña</label></div>
+  <button class="sec" type="submit">Cancelar reserva</button>
+</form></details>
+{% endif %}
+{% endblock %}

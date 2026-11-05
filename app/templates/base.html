@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>{% block titulo %}Bicis{% endblock %} · Bicis sustentables</title>
+<link rel="stylesheet" href="/static/estilo.css">
+</head>
+<body>
+<header class="barra"><div class="interior">
+  <a class="marca" href="/">Bicis sustentables</a>
+  {% if usuario %}
+  <nav class="menu">
+    <a href="/">Tablero</a>
+    <a href="/bicicletas">Bicicletas</a>
+    {% if usuario.roles.intersection(['ADMIN','MOSTRADOR']) %}<a href="/alquileres">Alquileres</a><a href="/reservas">Reservas</a><a href="/clientes">Clientes</a>{% endif %}
+    {% if usuario.roles.intersection(['ADMIN','TECNICO']) %}<a href="/taller">Taller</a>{% endif %}
+    <a href="/informes">Informes</a>
+  </nav>
+  <span class="espacio"></span>
+  <span class="suave ocultar-movil">{{ usuario.nombre }} {{ usuario.apellido }}</span>
+  <a href="/clave">Contraseña</a>
+  <form method="post" action="/salir">
+    <input type="hidden" name="csrf" value="{{ usuario.csrf }}">
+    <button class="sec" type="submit">Salir</button>
+  </form>
+  {% endif %}
+</div></header>
+<main>{% block contenido %}{% endblock %}</main>
+</body>
+</html>

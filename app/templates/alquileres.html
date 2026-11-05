@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block titulo %}Alquileres{% endblock %}
+{% block contenido %}
+<h1>Alquileres</h1>
+<form class="filtros" method="get" action="/alquileres">
+  <div><label for="q">Cliente o documento</label><input id="q" name="q" value="{{ q }}" maxlength="60"></div>
+  <div><label for="estado">Estado</label><select id="estado" name="estado">
+    {% for e, n in [('EN_CURSO','En curso'),('FINALIZADO','Finalizados'),('ANULADO','Anulados'),('TODOS','Todos')] %}
+    <option value="{{ e }}" {% if e == estado %}selected{% endif %}>{{ n }}</option>{% endfor %}</select></div>
+  <button type="submit">Filtrar</button>
+  <a class="boton sec" href="/alquileres/nuevo">Nuevo alquiler</a>
+</form>
+<div class="tabla-scroll"><table>
+  <tr><th>Alquiler</th><th>Cliente</th><th>Salida</th><th>Debe volver</th><th class="num">Bicis</th><th class="num">Total</th><th class="num">Saldo</th></tr>
+  {% for a in alquileres %}
+  <tr><td><a href="/alquileres/{{ a.id }}">#{{ a.id }}</a></td><td>{{ a.cliente }}</td><td>{{ a.salida_real|fecha }}</td>
+      <td class="{% if a.demorado %}mal-texto{% endif %}">{{ a.fin_previsto|fecha }}</td>
+      <td class="num">{{ a.bicis }}</td><td class="num">{{ a.total|pesos }}</td>
+      <td class="num {% if a.saldo and a.saldo > 0 %}mal-texto{% endif %}">{{ a.saldo|pesos }}</td></tr>
+  {% else %}<tr><td colspan="7" class="suave">Sin resultados.</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

@@ -1,0 +1,21 @@
+<fieldset class="grupo"><legend>Cliente</legend>
+  <div class="fila">
+    <div class="campo"><label for="doc_tipo">Documento</label>
+      <select id="doc_tipo" name="doc_tipo">
+        {% for t in ['DNI','PASAPORTE','OTRO'] %}<option {% if (v.doc_tipo or 'DNI') == t %}selected{% endif %}>{{ t }}</option>{% endfor %}
+      </select></div>
+    <div class="campo"><label for="doc_pais">País (2 letras)</label>
+      <input id="doc_pais" name="doc_pais" value="{{ v.doc_pais or 'AR' }}" maxlength="2" required></div>
+    <div class="campo"><label for="doc_num">Número</label>
+      <input id="doc_num" name="doc_num" value="{{ v.doc_num or '' }}" maxlength="30" required></div>
+  </div>
+  <p class="ayuda">Si el documento ya está registrado se usa ese cliente; si no, completá los datos para darlo de alta.</p>
+  <div class="fila">
+    <div class="campo"><label for="nombre">Nombre</label><input id="nombre" name="nombre" value="{{ v.nombre or '' }}" maxlength="60"></div>
+    <div class="campo"><label for="apellido">Apellido</label><input id="apellido" name="apellido" value="{{ v.apellido or '' }}" maxlength="60"></div>
+  </div>
+  <div class="fila">
+    <div class="campo"><label for="email">Correo (opcional)</label><input id="email" name="email" type="email" value="{{ v.email or '' }}" maxlength="254"></div>
+    <div class="campo"><label for="telefono">Teléfono (opcional)</label><input id="telefono" name="telefono" value="{{ v.telefono or '' }}" maxlength="30"></div>
+  </div>
+</fieldset>

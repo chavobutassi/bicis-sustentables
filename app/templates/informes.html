@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block titulo %}Informes{% endblock %}
+{% block contenido %}
+<h1>Informes</h1>
+<h2>Ingresos por mes (alquileres devueltos)</h2>
+<div class="tabla-scroll"><table>
+  <tr><th>Mes</th><th class="num">Bicicletas alquiladas</th><th class="num">Horas</th><th class="num">Ingresos</th></tr>
+  {% for m in meses %}<tr><td>{{ m.mes|fecha('%m/%Y') }}</td><td class="num">{{ m.bicis|numero }}</td><td class="num">{{ m.horas|numero }}</td><td class="num">{{ m.ingresos|pesos }}</td></tr>{% endfor %}
+</table></div>
+{% for titulo, lista in [('Bicicletas que más aportan', mejores), ('Bicicletas que menos aportan', peores)] %}
+<h2>{{ titulo }}</h2>
+<p class="ayuda">Margen = ingresos por alquiler + cargos a clientes − costo de mantenimiento, desde el alta.</p>
+<div class="tabla-scroll"><table>
+  <tr><th>Bicicleta</th><th>Tipo</th><th class="num">Alquileres</th><th class="num">Ingresos</th><th class="num">Correctivas</th><th class="num">Mantenimiento</th><th class="num">Margen</th></tr>
+  {% for b in lista %}
+  <tr><td><a href="/bicicletas/{{ b.bicicleta_id }}">{{ b.codigo }}</a></td><td>{{ b.tipo }}</td><td class="num">{{ b.alquileres }}</td>
+      <td class="num">{{ b.ingresos|pesos }}</td><td class="num">{{ b.ordenes_correctivas }}</td>
+      <td class="num">{{ b.costo_mantenimiento|pesos }}</td><td class="num">{{ b.margen|pesos }}</td></tr>
+  {% endfor %}
+</table></div>
+{% endfor %}
+{% endblock %}

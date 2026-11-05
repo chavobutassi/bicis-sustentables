@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block titulo %}Nuevo alquiler{% endblock %}
+{% block contenido %}
+<h1>Nuevo alquiler</h1>
+{% if reserva %}
+<p class="aviso-ok">Retiro de la reserva #{{ reserva.id }} de {{ reserva.nombre }} {{ reserva.apellido }}:
+  {% for p in reserva.pedido %}{{ p.cantidad }} {{ p.tipo }}{% if not loop.last %}, {% endif %}{% endfor %}.</p>
+{% endif %}
+{% if error %}<p class="aviso-error" role="alert">{{ error }}</p>{% endif %}
+{% if not reserva %}
+<form class="filtros" method="get" action="/alquileres/nuevo">
+  <div><label for="est_sel">Estación de retiro</label>
+    <select id="est_sel" name="est">{% for e in estaciones %}<option value="{{ e.id }}" {% if e.id == est %}selected{% endif %}>{{ e.nombre }}</option>{% endfor %}</select></div>
+  <button class="sec" type="submit">Ver bicicletas</button>
+</form>
+{% endif %}
+<form method="post" action="/alquileres/nuevo" class="formulario ancho">
+  <input type="hidden" name="csrf" value="{{ usuario.csrf }}">
+  <input type="hidden" name="est" value="{{ est }}">
+  {% if reserva %}<input type="hidden" name="reserva_id" value="{{ reserva.id }}">{% endif %}
+  {% set v = v if not reserva else {'doc_tipo': reserva.tipo_documento, 'doc_pais': reserva.pais_documento, 'doc_num': reserva.numero_documento} %}
+  {% include "_cliente.html" %}
+  <fieldset class="grupo"><legend>Duración</legend>
+    <div class="fila">
+      <div class="campo"><label for="modalidad">Modalidad</label>
+        <select id="modalidad" name="modalidad"><option value="HORA" {% if v.modalidad != 'DIA' %}selected{% endif %}>Por hora</option>
+          <option value="DIA" {% if v.modalidad == 'DIA' %}selected{% endif %}>Por día</option></select></div>
+      <div class="campo"><label for="cantidad">Cantidad de horas o de días</label>
+        <input id="cantidad" name="cantidad" type="number" min="1" max="30" value="{{ v.cantidad or 2 }}" required></div>
+    </div>
+    <p class="ayuda">Se cobra el tiempo real de uso, con 10 minutos de tolerancia por hora y 1 hora por día. Nunca sale más caro que alquilar por día.</p>
+  </fieldset>
+  <fieldset class="grupo"><legend>Bicicletas disponibles en la estación</legend>
+    {% for b in disponibles %}
+    <label class="opcion"><input type="checkbox" name="bicis" value="{{ b.id }}" style="width:auto">
+      <b>{{ b.codigo }}</b> · {{ b.tipo }} {{ b.marca }} {{ b.modelo }} (talle {{ b.talle }}) ·
+      {{ b.precio_hora|pesos }}/h · {{ b.precio_dia|pesos }}/día</label>
+    {% else %}<p class="suave">No hay bicicletas disponibles en esta estación.</p>{% endfor %}
+  </fieldset>
+  <div class="campo"><label for="observaciones">Observaciones (opcional)</label>
+    <input id="observaciones" name="observaciones" maxlength="500" value="{{ v.observaciones or '' }}"></div>
+  <button type="submit">Registrar salida</button>
+</form>
+{% endblock %}

@@ -1,0 +1,15 @@
+# Despliegue en Render (https://render.com): "New > Blueprint" y elegir este repositorio.
+# Después de crear el servicio, cargar DATABASE_URL en el panel (no se guarda en el repositorio).
+services:
+  - type: web
+    name: bicis-sustentables
+    runtime: docker
+    plan: free
+    healthCheckPath: /salud
+    envVars:
+      - key: APP_ENV
+        value: produccion
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false

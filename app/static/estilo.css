@@ -1,0 +1,80 @@
+:root {
+  --fondo: #f5f6f8; --tarjeta: #fff; --texto: #1c2430; --suave: #5b6675; --linea: #dde1e7;
+  --acento: #1f5fbf; --acento-texto: #fff; --ok: #1d7a4a; --aviso: #a86400; --mal: #b3261e;
+  --ok-fondo: #e3f4ea; --aviso-fondo: #fdf0d9; --mal-fondo: #fbe5e3; --info-fondo: #e3edfb;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fondo: #12161c; --tarjeta: #1b212a; --texto: #e6eaf0; --suave: #9aa5b4; --linea: #2d3541;
+    --acento: #6ea3f0; --acento-texto: #0d1420; --ok: #5fcf93; --aviso: #f0b45b; --mal: #ff8a80;
+    --ok-fondo: #173326; --aviso-fondo: #3a2c12; --mal-fondo: #3d1d1b; --info-fondo: #1b2c47;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--fondo); color: var(--texto);
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+a { color: var(--acento); }
+header.barra { background: var(--tarjeta); border-bottom: 1px solid var(--linea); }
+.barra .interior { max-width: 1100px; margin: 0 auto; padding: 10px 16px; display: flex;
+  gap: 16px; align-items: center; flex-wrap: wrap; }
+.marca { font-weight: 700; text-decoration: none; color: var(--texto); }
+.barra .espacio { flex: 1; }
+.barra form { margin: 0; }
+main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 48px; }
+h1 { font-size: 1.5rem; margin: 0 0 4px; } h2 { font-size: 1.1rem; margin: 28px 0 8px; }
+.sub { color: var(--suave); margin: 0 0 16px; }
+.tarjeta { background: var(--tarjeta); border: 1px solid var(--linea); border-radius: 10px; padding: 16px; }
+.cifras { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 16px 0; }
+.cifra { background: var(--tarjeta); border: 1px solid var(--linea); border-radius: 10px; padding: 12px 14px; }
+.cifra b { display: block; font-size: 1.7rem; line-height: 1.2; }
+.cifra span { color: var(--suave); font-size: .85rem; }
+.cifra.alerta b { color: var(--mal); }
+table { width: 100%; border-collapse: collapse; background: var(--tarjeta);
+  border: 1px solid var(--linea); border-radius: 10px; overflow: hidden; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--linea); vertical-align: top; }
+th { font-size: .78rem; text-transform: uppercase; letter-spacing: .03em; color: var(--suave); background: var(--fondo); }
+tr:last-child td { border-bottom: 0; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.tabla-scroll { overflow-x: auto; }
+.etiqueta { display: inline-block; padding: 1px 9px; border-radius: 99px; font-size: .78rem; font-weight: 600;
+  background: var(--info-fondo); color: var(--acento); white-space: nowrap; }
+.etiqueta.DISPONIBLE { background: var(--ok-fondo); color: var(--ok); }
+.etiqueta.ASIGNADO { background: var(--info-fondo); color: var(--acento); }
+.etiqueta.EN_MANTENIMIENTO, .etiqueta.aviso { background: var(--aviso-fondo); color: var(--aviso); }
+.etiqueta.FUERA_DE_SERVICIO, .etiqueta.BAJA, .etiqueta.mal { background: var(--mal-fondo); color: var(--mal); }
+.mal-texto { color: var(--mal); font-weight: 600; } .suave { color: var(--suave); }
+.filtros { display: flex; gap: 10px; flex-wrap: wrap; align-items: end; margin: 12px 0; }
+label { display: block; font-size: .85rem; font-weight: 600; margin-bottom: 3px; }
+input, select, textarea { font: inherit; color: var(--texto); background: var(--tarjeta);
+  border: 1px solid var(--linea); border-radius: 8px; padding: 8px 10px; width: 100%; }
+.filtros input, .filtros select { width: auto; }
+textarea { min-height: 70px; resize: vertical; }
+input:focus, select:focus, textarea:focus, button:focus-visible, a:focus-visible {
+  outline: 2px solid var(--acento); outline-offset: 1px; }
+.boton, button { font: inherit; font-weight: 600; background: var(--acento); color: var(--acento-texto);
+  border: 0; border-radius: 8px; padding: 9px 16px; cursor: pointer; text-decoration: none; display: inline-block; }
+.boton.sec, button.sec { background: transparent; color: var(--acento); border: 1px solid var(--linea); }
+.acciones { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
+.formulario { max-width: 560px; } .campo { margin-bottom: 14px; }
+.ayuda { color: var(--suave); font-size: .82rem; margin-top: 3px; }
+.aviso-ok, .aviso-error { padding: 10px 14px; border-radius: 8px; margin: 0 0 14px; }
+.aviso-ok { background: var(--ok-fondo); color: var(--ok); }
+.aviso-error { background: var(--mal-fondo); color: var(--mal); }
+.grilla { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px 20px; }
+.grilla dt { color: var(--suave); font-size: .8rem; } .grilla dd { margin: 0 0 6px; font-weight: 600; }
+.login { max-width: 380px; margin: 8vh auto 0; }
+@media (max-width: 640px) { th, td { padding: 7px 6px; font-size: .88rem; } .ocultar-movil { display: none; } }
+
+/* Bicis sustentables */
+.etiqueta.ALQUILADA { background: var(--info-fondo); color: var(--acento); }
+.menu { display: flex; gap: 14px; flex-wrap: wrap; }
+.menu a { text-decoration: none; font-weight: 600; }
+.formulario.ancho { max-width: 760px; }
+fieldset.grupo { border: 1px solid var(--linea); border-radius: 10px; margin: 0 0 16px; padding: 10px 14px 4px; background: var(--tarjeta); }
+fieldset.grupo legend { font-weight: 700; padding: 0 6px; }
+.fila { display: flex; gap: 10px; flex-wrap: wrap; } .fila > * { flex: 1 1 140px; }
+label.opcion { display: flex; gap: 8px; align-items: center; font-weight: 400; padding: 5px 0; }
+.devolucion { display: grid; gap: 6px; min-width: 260px; } .devolucion .fila select { width: 100%; }
+details { margin: 8px 0; } summary { cursor: pointer; color: var(--acento); font-weight: 600; }
+.orden { margin-bottom: 12px; } .orden p { margin: 0 0 8px; }
+ul { padding-left: 20px; }
