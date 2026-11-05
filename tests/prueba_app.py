@@ -272,6 +272,52 @@ verificar(sql("SELECT resuelta_en FROM incidencia WHERE id = %s", (o["incidencia
 r = admin.get(f"/bicicletas/{dañada}")
 verificar("Frenos sin mordiente" in r.text and "Fin de la orden" in r.text, "la ficha muestra incidencias e historial")
 
+print("Taller: riesgo de falla (modelo de la fase 2)")
+# Una bicicleta disponible sin servicio vencido ni orden abierta, con un riesgo alto inventado, para ejercitar la
+# tabla "Riesgo alto sin servicio vencido" (en los datos reales todas las de riesgo alto ya tienen algo vencido).
+sin_vencer = sql("""SELECT b.id, b.codigo FROM bicicleta b JOIN estado_bicicleta e ON e.id = b.estado_id
+                     WHERE e.codigo = 'DISPONIBLE'
+                       AND NOT EXISTS (SELECT 1 FROM v_proximo_servicio v WHERE v.bicicleta_id = b.id
+                                          AND (v.horas_restantes < 0 OR v.dias_restantes < 0))
+                       AND NOT EXISTS (SELECT 1 FROM orden_mantenimiento o JOIN estado_orden s ON s.id = o.estado_id
+                                        WHERE o.bicicleta_id = b.id AND s.codigo IN ('ABIERTA','EN_CURSO'))
+                     ORDER BY b.id LIMIT 1""")
+if sin_vencer:
+    sql("""INSERT INTO prediccion_mantenimiento (bicicleta_id, horizonte_dias, sistema, probabilidad, modelo_version)
+           VALUES (%s, 30, NULL, 0.95, 'prueba-app'), (%s, 30, 'FRENOS', 0.20, 'prueba-app')""",
+        (sin_vencer[0]["id"], sin_vencer[0]["id"]))
+html = tecnico.get("/taller").text
+verificar("Riesgo del sistema" in html and "modelo del" in html, "el taller muestra el riesgo y la fecha del modelo")
+tramo = html.split("Servicios vencidos")[1].split("Riesgo alto sin servicio vencido")[0]
+filas = re.findall(r'<tr><td><a href="/bicicletas/(\d+)">([^<]+)</a></td><td>[^<]*</td>\s*<td class="num">(.*?)</td>', tramo)
+riesgos = [int(m.group(1)) if (m := re.search(r"(\d+) %", celda)) else -1 for _, _, celda in filas]
+verificar(len(filas) > 0 and riesgos == sorted(riesgos, reverse=True),
+          "los servicios vencidos salen ordenados por riesgo del sistema (sin dato, al final)")
+codigos_vencidos = {codigo for _, codigo, _ in filas}
+if "Riesgo alto sin servicio vencido" in html:
+    alto = html.split("Riesgo alto sin servicio vencido")[1]
+    cods = re.findall(r'<a href="/bicicletas/\d+">([^<]+)</a>', alto)
+    verificar(cods and not (set(cods) & codigos_vencidos), "el riesgo alto sin vencimiento no repite bicicletas ya listadas")
+    umbral = round(100 * __import__("app.main", fromlist=["UMBRALES_RIESGO"]).UMBRALES_RIESGO["total"][1])
+    pcts = [int(x) for x in re.findall(r"(\d+) %", alto)]
+    verificar(all(x >= umbral for x in pcts), f"todas las de esa tabla superan el {umbral} % de riesgo")
+    if sin_vencer:
+        verificar(sin_vencer[0]["codigo"] in alto and "95 %" in alto and "FRENOS" in alto,
+                  "una bicicleta de riesgo alto sin vencimiento aparece, con su sistema de mayor riesgo")
+else:
+    verificar(not sin_vencer, "la tabla de riesgo alto aparece cuando corresponde")
+sql("DELETE FROM prediccion_mantenimiento WHERE modelo_version = 'prueba-app'")
+verificar("Riesgo alto sin servicio vencido" not in tecnico.get("/taller").text or not sin_vencer,
+          "al sacar esa predicción, la bicicleta deja de figurar")
+sql("UPDATE prediccion_mantenimiento SET calculada_en = calculada_en - interval '20 days'")
+verificar("más de 14 días" in tecnico.get("/taller").text, "avisa si las predicciones tienen más de 14 días")
+sql("UPDATE prediccion_mantenimiento SET calculada_en = calculada_en + interval '20 days'")
+verificar("más de 14 días" not in tecnico.get("/taller").text, "no avisa con predicciones recientes")
+sql("DELETE FROM prediccion_mantenimiento")   # (base de prueba: es una copia)
+r = tecnico.get("/taller")
+verificar(r.status_code == 200 and "Sin predicciones de riesgo" in r.text,
+          "sin predicciones, el taller funciona y ordena por vencimiento")
+
 print("Clientes")
 r = mostrador.get(f"/clientes?q={DNI}")
 verificar("Automática" in r.text, "se busca un cliente por documento")

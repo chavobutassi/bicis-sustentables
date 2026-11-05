@@ -24,15 +24,38 @@
 {% else %}<p class="suave">No hay órdenes abiertas.</p>{% endfor %}
 
 <h2>Servicios vencidos en bicicletas disponibles</h2>
+{% if prediccion_fecha %}
+<p class="suave">Ordenados por riesgo de falla del sistema en los próximos 30 días (modelo del {{ prediccion_fecha|fecha }}).
+  El riesgo es relativo a la flota y no reemplaza al vencimiento.</p>
+{% if prediccion_vieja %}<p class="aviso-error" role="alert">Las predicciones tienen más de 14 días: volvé a correr
+  <code>modelo/riesgo_falla.py --escribir</code> para actualizarlas.</p>{% endif %}
+{% else %}<p class="suave">Sin predicciones de riesgo: se ordena solo por vencimiento
+  (correr <code>modelo/riesgo_falla.py --escribir</code>).</p>{% endif %}
 <div class="tabla-scroll"><table>
-  <tr><th>Bicicleta</th><th>Tarea</th><th class="num">Horas restantes</th><th class="num">Días restantes</th><th></th></tr>
+  <tr><th>Bicicleta</th><th>Tarea</th><th class="num">Riesgo del sistema</th><th class="num">Riesgo de la bici</th>
+      <th class="num">Horas restantes</th><th class="num">Días restantes</th><th></th></tr>
   {% for p in pendientes %}
   <tr><td><a href="/bicicletas/{{ p.bicicleta_id }}">{{ p.codigo }}</a></td><td>{{ p.tarea }}</td>
+      <td class="num">{% if p.riesgo_sistema is not none %}<span class="etiqueta {{ p.riesgo_sistema|nivel_riesgo('sistema') }}">{{ p.riesgo_sistema|porcentaje }}</span>{% else %}—{% endif %}</td>
+      <td class="num">{% if p.riesgo_total is not none %}<span class="etiqueta {{ p.riesgo_total|nivel_riesgo('total') }}">{{ p.riesgo_total|porcentaje }}</span>{% else %}—{% endif %}</td>
       <td class="num {% if p.horas_restantes is not none and p.horas_restantes < 0 %}mal-texto{% endif %}">{{ p.horas_restantes|numero(1) }}</td>
       <td class="num {% if p.dias_restantes is not none and p.dias_restantes < 0 %}mal-texto{% endif %}">{{ p.dias_restantes|numero }}</td>
       <td><form method="post" action="/taller/abrir"><input type="hidden" name="csrf" value="{{ usuario.csrf }}">
         <input type="hidden" name="bicicleta_id" value="{{ p.bicicleta_id }}"><input type="hidden" name="plan_id" value="{{ p.plan_id }}">
         <button class="sec" type="submit">Abrir orden</button></form></td></tr>
-  {% else %}<tr><td colspan="5" class="suave">Nada vencido.</td></tr>{% endfor %}
+  {% else %}<tr><td colspan="7" class="suave">Nada vencido.</td></tr>{% endfor %}
 </table></div>
+
+{% if riesgo_alto %}
+<h2>Riesgo alto sin servicio vencido</h2>
+<p class="suave">Bicicletas disponibles con riesgo alto de falla que el vencimiento todavía no marca. Conviene revisarlas.</p>
+<div class="tabla-scroll"><table>
+  <tr><th>Bicicleta</th><th class="num">Riesgo de la bici</th><th>Sistema de mayor riesgo</th></tr>
+  {% for r in riesgo_alto %}
+  <tr><td><a href="/bicicletas/{{ r.bicicleta_id }}">{{ r.codigo }}</a></td>
+      <td class="num"><span class="etiqueta {{ r.riesgo_total|nivel_riesgo('total') }}">{{ r.riesgo_total|porcentaje }}</span></td>
+      <td>{{ r.sistema_mayor_riesgo or '—' }}</td></tr>
+  {% endfor %}
+</table></div>
+{% endif %}
 {% endblock %}

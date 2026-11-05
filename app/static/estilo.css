@@ -38,7 +38,7 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .tabla-scroll { overflow-x: auto; }
 .etiqueta { display: inline-block; padding: 1px 9px; border-radius: 99px; font-size: .78rem; font-weight: 600;
   background: var(--info-fondo); color: var(--acento); white-space: nowrap; }
-.etiqueta.DISPONIBLE { background: var(--ok-fondo); color: var(--ok); }
+.etiqueta.DISPONIBLE, .etiqueta.ok { background: var(--ok-fondo); color: var(--ok); }
 .etiqueta.ASIGNADO { background: var(--info-fondo); color: var(--acento); }
 .etiqueta.EN_MANTENIMIENTO, .etiqueta.aviso { background: var(--aviso-fondo); color: var(--aviso); }
 .etiqueta.FUERA_DE_SERVICIO, .etiqueta.BAJA, .etiqueta.mal { background: var(--mal-fondo); color: var(--mal); }

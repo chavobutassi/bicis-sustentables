@@ -78,8 +78,26 @@ def pesos(valor):
     return "—" if valor is None else "$ " + numero(valor)
 
 
+def porcentaje(valor):
+    return "—" if valor is None else f"{float(valor) * 100:.0f} %"
+
+
+# Niveles de riesgo de falla a 30 días. Son relativos a la flota (aprox. el 25 % y el 10 % superior de las
+# predicciones del modelo, ver docs/modelo_riesgo.md), no una probabilidad "peligrosa" en sí.
+UMBRALES_RIESGO = {"total": (0.30, 0.40), "sistema": (0.06, 0.09)}
+
+
+def nivel_riesgo(valor, clase="total"):
+    if valor is None:
+        return ""
+    medio, alto = UMBRALES_RIESGO[clase]
+    return "mal" if valor >= alto else "aviso" if valor >= medio else "ok"
+
+
 plantillas.env.filters["fecha"] = fecha
 plantillas.env.filters["numero"] = numero
+plantillas.env.filters["porcentaje"] = porcentaje
+plantillas.env.filters["nivel_riesgo"] = nivel_riesgo
 plantillas.env.filters["pesos"] = pesos
 
 
@@ -904,16 +922,45 @@ def vista_taller(request, usuario, error=None, ok=None, estado=200):
              JOIN tipo_mantenimiento t ON t.id = o.tipo_id JOIN bicicleta b ON b.id = o.bicicleta_id
              LEFT JOIN usuario tec ON tec.id = o.tecnico_id
             WHERE e.codigo IN ('ABIERTA','EN_CURSO') ORDER BY o.abierta_en""")
+    # Última predicción de falla a 30 días del modelo (fase 2), total (sistema NULL) y por sistema.
+    pred = """WITH pred AS (
+                SELECT DISTINCT ON (bicicleta_id, sistema) bicicleta_id, sistema, probabilidad, calculada_en
+                  FROM prediccion_mantenimiento WHERE horizonte_dias = 30
+                 ORDER BY bicicleta_id, sistema, calculada_en DESC, id DESC)"""
     pendientes = db.consultar(
-        """SELECT p.bicicleta_id, p.codigo, p.plan_id, p.tarea, p.horas_restantes, p.dias_restantes, p.fecha_estimada
+        pred + """
+           SELECT p.bicicleta_id, p.codigo, p.plan_id, p.tarea, p.horas_restantes, p.dias_restantes, p.fecha_estimada,
+                  pm.sistema, ps.probabilidad AS riesgo_sistema, pt.probabilidad AS riesgo_total
              FROM v_proximo_servicio p
+             JOIN plan_mantenimiento pm ON pm.id = p.plan_id
              JOIN bicicleta b ON b.id = p.bicicleta_id JOIN estado_bicicleta e ON e.id = b.estado_id
+             LEFT JOIN pred ps ON ps.bicicleta_id = p.bicicleta_id AND ps.sistema = pm.sistema
+             LEFT JOIN pred pt ON pt.bicicleta_id = p.bicicleta_id AND pt.sistema IS NULL
             WHERE e.codigo = 'DISPONIBLE' AND (p.horas_restantes < 0 OR p.dias_restantes < 0)
               AND NOT EXISTS (SELECT 1 FROM orden_mantenimiento o JOIN estado_orden s ON s.id = o.estado_id
                                WHERE o.bicicleta_id = p.bicicleta_id AND s.codigo IN ('ABIERTA','EN_CURSO'))
-            ORDER BY LEAST(COALESCE(p.horas_restantes, 0), 0) , p.dias_restantes NULLS LAST LIMIT 40""")
-    return pantalla(request, "taller.html", {"ordenes": ordenes, "pendientes": pendientes, "error": error, "ok": ok},
-                    estado, usuario)
+            ORDER BY ps.probabilidad DESC NULLS LAST, LEAST(COALESCE(p.horas_restantes, 0), 0), p.dias_restantes NULLS LAST
+            LIMIT 40""")
+    # Bicicletas de riesgo alto que todavía no tienen ningún servicio vencido (el vencimiento no las muestra).
+    riesgo_alto = db.consultar(
+        pred + """
+           SELECT b.id AS bicicleta_id, b.codigo, pt.probabilidad AS riesgo_total,
+                  (SELECT sistema FROM pred x WHERE x.bicicleta_id = b.id AND x.sistema IS NOT NULL
+                    ORDER BY x.probabilidad DESC LIMIT 1) AS sistema_mayor_riesgo
+             FROM bicicleta b JOIN estado_bicicleta e ON e.id = b.estado_id
+             JOIN pred pt ON pt.bicicleta_id = b.id AND pt.sistema IS NULL
+            WHERE e.codigo = 'DISPONIBLE' AND pt.probabilidad >= %s
+              AND NOT EXISTS (SELECT 1 FROM v_proximo_servicio v WHERE v.bicicleta_id = b.id
+                                 AND (v.horas_restantes < 0 OR v.dias_restantes < 0))
+              AND NOT EXISTS (SELECT 1 FROM orden_mantenimiento o JOIN estado_orden s ON s.id = o.estado_id
+                               WHERE o.bicicleta_id = b.id AND s.codigo IN ('ABIERTA','EN_CURSO'))
+            ORDER BY pt.probabilidad DESC LIMIT 8""", (UMBRALES_RIESGO["total"][1],))
+    vigencia = db.consultar("SELECT max(calculada_en) AS calculada_en FROM prediccion_mantenimiento WHERE horizonte_dias = 30")
+    calculada = vigencia[0]["calculada_en"] if vigencia else None
+    desactualizada = calculada is not None and (datetime.now(calculada.tzinfo) - calculada).days > 14
+    return pantalla(request, "taller.html", {"ordenes": ordenes, "pendientes": pendientes, "riesgo_alto": riesgo_alto,
+                                             "prediccion_fecha": calculada, "prediccion_vieja": desactualizada,
+                                             "error": error, "ok": ok}, estado, usuario)
 
 
 @app.get("/taller", response_class=HTMLResponse)
