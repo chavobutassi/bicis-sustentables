@@ -1,0 +1,260 @@
+{
+  "alquiler": {
+    "filas_train": 9838,
+    "filas_test": 2849,
+    "fallas_train": 335,
+    "fallas_test": 100,
+    "tasa_test": 0.0351000351000351,
+    "modelos": {
+      "base_tasa_global": {
+        "auc": 0.7455583848672245,
+        "ap": 0.11703570202937304,
+        "log_loss": 0.13791885350639263,
+        "brier": 0.032550922386332386,
+        "lift_decil_superior": 2.8997455470737914
+      },
+      "base_tasa_por_tipo": {
+        "auc": 0.7408293925063659,
+        "ap": 0.10640413518270733,
+        "log_loss": 0.1386378022643535,
+        "brier": 0.03270010514701865,
+        "lift_decil_superior": 3.2308247422680414
+      },
+      "base_regla_vencida": {
+        "auc": 0.7488195707530011,
+        "ap": 0.13170230148087395,
+        "log_loss": 0.13687761882609642,
+        "brier": 0.03233858842202786,
+        "lift_decil_superior": 3.217878787878788
+      },
+      "poisson": {
+        "auc": 0.7591960712986541,
+        "ap": 0.17946840703480885,
+        "log_loss": 0.13350201043000293,
+        "brier": 0.031537935834442234,
+        "lift_decil_superior": 3.5987368421052635
+      },
+      "gradiente": {
+        "auc": 0.7418079301564204,
+        "ap": 0.12612337883466768,
+        "log_loss": 0.13875381023171848,
+        "brier": 0.03269956525993989,
+        "lift_decil_superior": 3.7986666666666666
+      },
+      "verdad_simulada": {
+        "auc": 0.7620807566387777,
+        "ap": 0.17317265332386256,
+        "log_loss": 0.13333213087733237,
+        "brier": 0.03155093718875254,
+        "lift_decil_superior": 4.098561403508772
+      }
+    },
+    "correlacion_tasa_con_verdad": {
+      "poisson": 0.7981530708128363,
+      "gradiente": 0.6298668771392979
+    }
+  },
+  "por_sistema": {
+    "TRANSMISION": {
+      "fallas_test": 26,
+      "auc_modelo": 0.8226927164227908,
+      "auc_regla_vencida": 0.7908389874383498
+    },
+    "FRENOS": {
+      "fallas_test": 19,
+      "auc_modelo": 0.868607029942347,
+      "auc_regla_vencida": 0.861753766040543
+    },
+    "NEUMATICOS": {
+      "fallas_test": 24,
+      "auc_modelo": 0.7145132743362832,
+      "auc_regla_vencida": 0.7146681415929204
+    },
+    "CUADRO": {
+      "fallas_test": 11,
+      "auc_modelo": 0.6771093599846243,
+      "auc_regla_vencida": 0.6465180344672945
+    },
+    "SUSPENSION": {
+      "fallas_test": 5,
+      "auc_modelo": 0.9271448663853727,
+      "auc_regla_vencida": 0.8021448663853727
+    }
+  },
+  "panel_30d": {
+    "filas_train": 3459,
+    "filas_test": 1974,
+    "tasa_train": 0.2489158716392021,
+    "tasa_test": 0.15450861195542046,
+    "modelos": {
+      "base_tasa_por_tipo": {
+        "auc": 0.4758164798789891,
+        "ap": 0.14893305019490827,
+        "log_loss": 0.46298367619236885,
+        "brier": 0.1422483953261651,
+        "lift_decil_superior": 1.0047461660497092
+      },
+      "base_regla_vencida": {
+        "auc": 0.5075179993910165,
+        "ap": 0.15651709859512508,
+        "log_loss": 0.45923120806748585,
+        "brier": 0.1407889558903508,
+        "lift_decil_superior": 1.0225270035612326
+      },
+      "directo_logistica": {
+        "auc": 0.5476706381557622,
+        "ap": 0.18572887903677604,
+        "log_loss": 0.45002846178292133,
+        "brier": 0.1385649619771437,
+        "lift_decil_superior": 1.4382513661202185
+      },
+      "directo_gradiente": {
+        "auc": 0.5234399709259496,
+        "ap": 0.176970798672354,
+        "log_loss": 0.4998702066556634,
+        "brier": 0.15997338857579746,
+        "lift_decil_superior": 1.4055638350720319
+      },
+      "tasa_poisson_uso_ingenuo": {
+        "auc": 0.5400406643813416,
+        "ap": 0.18559820748003333,
+        "log_loss": 0.4790042395072716,
+        "brier": 0.14750502417267075,
+        "lift_decil_superior": 1.2094386487829112
+      },
+      "tasa_poisson": {
+        "auc": 0.5942166213203155,
+        "ap": 0.22174501876639785,
+        "log_loss": 0.4296272414736041,
+        "brier": 0.13036793075242048,
+        "lift_decil_superior": 1.5690014903129659
+      },
+      "tasa_poisson_uso_real_(techo)": {
+        "auc": 0.6932039407125107,
+        "ap": 0.2913678705969194,
+        "log_loss": 0.399231747142287,
+        "brier": 0.12370609018507592,
+        "lift_decil_superior": 2.2227521112767015
+      },
+      "tasa_gradiente_uso_ingenuo": {
+        "auc": 0.5318753744757341,
+        "ap": 0.1847811516675033,
+        "log_loss": 0.4980996229179188,
+        "brier": 0.1528202729383699,
+        "lift_decil_superior": 1.4709388971684054
+      },
+      "tasa_gradiente": {
+        "auc": 0.5761337406319678,
+        "ap": 0.2105858342788557,
+        "log_loss": 0.4454256902741878,
+        "brier": 0.1350164819564576,
+        "lift_decil_superior": 1.6016890213611528
+      },
+      "verdad_simulada": {
+        "auc": 0.7071457336777691,
+        "ap": 0.3310126491040594,
+        "log_loss": 0.3912713564849027,
+        "brier": 0.12069223583481034,
+        "lift_decil_superior": 2.2881271733730753
+      }
+    },
+    "correlacion_con_verdad": {
+      "base_tasa_por_tipo": 0.11354515221925125,
+      "base_regla_vencida": 0.18301542419756997,
+      "directo_logistica": 0.3704334331980845,
+      "directo_gradiente": 0.3295565680356844,
+      "tasa_poisson_uso_ingenuo": 0.3321235618118147,
+      "tasa_poisson": 0.5173336358150621,
+      "tasa_poisson_uso_real_(techo)": 0.8638844761050445,
+      "tasa_gradiente_uso_ingenuo": 0.37200916867477796,
+      "tasa_gradiente": 0.5066731378688277
+    },
+    "pronostico_de_uso": {
+      "horas_reales_media": 24.909559692671394,
+      "horas_ingenuo_media": 38.086310930991786,
+      "corr_ingenuo": 0.28783590638092776,
+      "horas_pronostico_media": 24.805407385346957,
+      "corr_pronostico": 0.5438768261156091,
+      "coeficientes": {
+        "bici": 0.5616066823657778,
+        "flota": 0.42319504654220447
+      }
+    },
+    "auc_tasa_poisson_menos": {
+      "directo_logistica": {
+        "media": 0.045964789098005,
+        "ic95": [
+          -0.0010863847351572135,
+          0.09549202285743105
+        ]
+      },
+      "base_regla_vencida": {
+        "media": 0.08644643686143659,
+        "ic95": [
+          0.015730592720906128,
+          0.17120999987887342
+        ]
+      }
+    },
+    "calibracion_media": {
+      "base_tasa_por_tipo": 0.2498652604323128,
+      "base_regla_vencida": 0.24920943025598624,
+      "directo_logistica": 0.2070683779304003,
+      "directo_gradiente": 0.2715633864526088,
+      "tasa_poisson_uso_ingenuo": 0.21084122769703456,
+      "tasa_poisson": 0.15107226102165783,
+      "tasa_poisson_uso_real_(techo)": 0.14605257523209364,
+      "tasa_gradiente_uso_ingenuo": 0.21022942766916494,
+      "tasa_gradiente": 0.15355266364643802,
+      "verdad_simulada": 0.15830577632675047,
+      "observada": 0.15450861195542046
+    }
+  },
+  "parametros": {
+    "horizonte_dias": 30,
+    "corte": "2026-03-01",
+    "primera_foto": "2025-01-01",
+    "ultima_foto": "2026-10-05",
+    "paso_dias": 7,
+    "variables_tasa": [
+      "edad",
+      "atraso_max",
+      "atraso_suma",
+      "verano",
+      "atraso_TRANSMISION",
+      "atraso_FRENOS",
+      "atraso_NEUMATICOS",
+      "atraso_CUADRO",
+      "atraso_SUSPENSION",
+      "tipo_1",
+      "tipo_2",
+      "tipo_3",
+      "tipo_4",
+      "tipo_5",
+      "tipo_6"
+    ],
+    "variables_directo": [
+      "edad",
+      "horas_acum",
+      "horas_30d",
+      "horas_90d",
+      "usos_90d",
+      "ritmo_uso",
+      "atraso_max",
+      "atraso_suma",
+      "tareas_vencidas",
+      "dias_desde_servicio",
+      "atraso_TRANSMISION",
+      "atraso_FRENOS",
+      "atraso_NEUMATICOS",
+      "atraso_CUADRO",
+      "atraso_SUSPENSION",
+      "tipo_1",
+      "tipo_2",
+      "tipo_3",
+      "tipo_4",
+      "tipo_5",
+      "tipo_6"
+    ]
+  }
+}

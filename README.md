@@ -4,7 +4,7 @@ Sistema para **operar un negocio de alquiler de bicicletas** con varias estacion
 
 Es un proyecto propio de analítica de datos aplicada: la base de datos hace cumplir las reglas del negocio por sí misma (no confía en la aplicación), una aplicación web chica la usa en el mostrador, y un generador produce **dos temporadas de datos sintéticos con una verdad conocida** para poder evaluar después un modelo de mantenimiento predictivo.
 
-> **Estado:** base de datos, generador de datos y aplicación web terminados y probados (58 pruebas de reglas de la base, 82 pruebas de la aplicación, 16 invariantes sobre los datos). Falta la fase 2, el modelo de riesgo de falla (ver [Hoja de ruta](#hoja-de-ruta)).
+> **Estado:** base de datos, generador de datos y aplicación web terminados y probados (58 pruebas de reglas de la base, 82 pruebas de la aplicación, 16 invariantes sobre los datos). La fase 2, el modelo de riesgo de falla, también está terminada ([detalle](docs/modelo_riesgo.md)); falta el tablero (ver [Hoja de ruta](#hoja-de-ruta)).
 
 ## Qué tiene de interesante
 
@@ -93,6 +93,9 @@ DATABASE_URL=postgresql://.../bicis_prueba python3 tests/prueba_reglas.py
 # Invariantes del conjunto de datos (sobre la base ya cargada)
 psql "$DATABASE_URL" -f tests/verificar_datos.sql
 
+# Modelo de riesgo de falla (solo lee; antes correr modelo/riesgo_falla.py --escribir)
+DATABASE_URL=postgresql://.../bicis python3 tests/prueba_modelo.py
+
 # Aplicación de punta a punta (escribe en la base: usar una copia)
 DATABASE_URL=postgresql://.../bicis_app SECRET_KEY=... python3 tests/prueba_app.py
 ```
@@ -112,6 +115,7 @@ db/           esquema (schema.sql) y cierre de seguridad para Supabase
 generador/    simulación que produce los datos sintéticos
 data/         seed.sql.gz y la verdad simulada (verdad_*.csv)
 app/          aplicación web
+modelo/       modelo de riesgo de falla (fase 2) y sus resultados
 scripts/      cargadores de la demo
 tests/        reglas de la base, invariantes de los datos y aplicación
 docs/         diseño, diagrama entidad-relación y datos sintéticos
@@ -120,7 +124,7 @@ docs/         diseño, diagrama entidad-relación y datos sintéticos
 ## Hoja de ruta
 
 1. **Hecho:** base con reglas, generador, aplicación de mostrador.
-2. **Modelo de riesgo de falla** por bicicleta y sistema (regresión logística y gradiente, evaluados contra la línea base de reglas y contra la verdad simulada). Resultados en `prediccion_mantenimiento`.
+2. **Hecho:** modelo de riesgo de falla por bicicleta y sistema (tasa por hora de uso con regresión de Poisson, evaluada contra la regla de vencimiento y contra la verdad simulada). Resultados en `prediccion_mantenimiento`. Detalle y límites en [docs/modelo_riesgo.md](docs/modelo_riesgo.md).
 3. **Tablero en Power BI** sobre las vistas (ocupación, ingresos, rentabilidad por bicicleta, mantenimiento vencido).
 4. Reserva en línea para clientes con pago de la seña, y redistribución de bicicletas entre estaciones.
 
