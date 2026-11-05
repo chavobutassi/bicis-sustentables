@@ -1,0 +1,49 @@
+# Reentrena el modelo de riesgo de falla y agrega las predicciones de hoy a prediccion_mantenimiento.
+# Corre todos los días y también a mano (pestaña Actions > "Actualizar predicciones" > Run workflow).
+#
+# Requisito: un secreto del repositorio llamado DATABASE_URL (Settings > Secrets and variables > Actions)
+# con la cadena de conexión de la base. En Supabase usar la del *Session pooler*: la conexión directa es
+# solo IPv6 y los servidores de GitHub no la alcanzan. Sin el secreto, el job se omite sin fallar.
+name: Actualizar predicciones
+
+on:
+  schedule:
+    - cron: "17 9 * * *"      # 06:17 hora de Argentina, después de la noche de operación (GitHub usa UTC)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: actualizar-predicciones
+  cancel-in-progress: false
+
+jobs:
+  predicciones:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+    steps:
+      - name: Falta el secreto DATABASE_URL
+        if: ${{ env.DATABASE_URL == '' }}
+        run: |
+          echo "::warning::No hay secreto DATABASE_URL, así que no se actualizaron las predicciones."
+
+      - uses: actions/checkout@v4
+        if: ${{ env.DATABASE_URL != '' }}
+
+      - uses: actions/setup-python@v5
+        if: ${{ env.DATABASE_URL != '' }}
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: modelo/requirements.txt
+
+      - name: Instalar dependencias
+        if: ${{ env.DATABASE_URL != '' }}
+        run: pip install -r modelo/requirements.txt
+
+      - name: Reentrenar y escribir predicciones
+        if: ${{ env.DATABASE_URL != '' }}
+        run: python modelo/riesgo_falla.py --solo-puntuar --escribir

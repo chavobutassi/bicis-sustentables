@@ -310,9 +310,11 @@ sql("DELETE FROM prediccion_mantenimiento WHERE modelo_version = 'prueba-app'")
 verificar("Riesgo alto sin servicio vencido" not in tecnico.get("/taller").text or not sin_vencer,
           "al sacar esa predicción, la bicicleta deja de figurar")
 sql("UPDATE prediccion_mantenimiento SET calculada_en = calculada_en - interval '20 days'")
-verificar("más de 14 días" in tecnico.get("/taller").text, "avisa si las predicciones tienen más de 14 días")
+verificar("actualización automática no está funcionando" in tecnico.get("/taller").text,
+          "avisa si las predicciones tienen más de 4 días")
 sql("UPDATE prediccion_mantenimiento SET calculada_en = calculada_en + interval '20 days'")
-verificar("más de 14 días" not in tecnico.get("/taller").text, "no avisa con predicciones recientes")
+verificar("actualización automática no está funcionando" not in tecnico.get("/taller").text,
+          "no avisa con predicciones recientes")
 sql("DELETE FROM prediccion_mantenimiento")   # (base de prueba: es una copia)
 r = tecnico.get("/taller")
 verificar(r.status_code == 200 and "Sin predicciones de riesgo" in r.text,

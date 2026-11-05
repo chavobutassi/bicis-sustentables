@@ -58,9 +58,10 @@ with psycopg.connect(url) as con:
     cols = R.VARS_TASA + ["horas_acum", "ritmo_ef"]
     comprobar("las variables no cambian si se borra el futuro", np.allclose(a[cols].values, b[cols].values))
 
-    # 4. Probabilidades guardadas
+    # 4. Probabilidades guardadas (la última corrida)
     p = R.leer(con, "SELECT bicicleta_id, sistema, probabilidad, horizonte_dias FROM prediccion_mantenimiento "
-                    "WHERE modelo_version LIKE 'tasa-poisson-%'")
+                    "WHERE modelo_version LIKE 'tasa-poisson-%' AND calculada_en = "
+                    "(SELECT max(calculada_en) FROM prediccion_mantenimiento WHERE modelo_version LIKE 'tasa-poisson-%')")
     comprobar("hay predicciones guardadas (correr con --escribir)", len(p) > 0)
     if len(p):
         pr = p["probabilidad"].astype(float)
@@ -70,6 +71,44 @@ with psycopg.connect(url) as con:
         comprobar("el riesgo total no es menor que el de ningún sistema", (tot.reindex(mx.index) + 1e-3 >= mx).all())
         vivas = R.leer(con, "SELECT id FROM bicicleta WHERE fecha_baja IS NULL")["id"]
         comprobar("una predicción total por bicicleta activa", set(tot.index) == set(vivas))
+
+    # 5. Corrida desatendida: fecha de cálculo, validación y escritura segura
+    ultimo = pd.Timestamp("2026-11-03 18:00", tz="UTC")
+    hoy = pd.Timestamp("2026-11-05 15:30", tz="UTC")
+    comprobar("la fecha de cálculo es hoy a medianoche UTC",
+              R.fecha_de_calculo(ultimo, hoy=hoy) == pd.Timestamp("2026-11-05", tz="UTC"))
+    comprobar("con datos de hace más de 7 días se calcula desde el último dato, no desde hoy",
+              R.fecha_de_calculo(ultimo, hoy=hoy + pd.Timedelta(days=30)) == pd.Timestamp("2026-11-04", tz="UTC"))
+    comprobar("--fecha manda", R.fecha_de_calculo(ultimo, "2026-01-15", hoy=hoy) == pd.Timestamp("2026-01-15", tz="UTC"))
+
+    ahora = pd.Timestamp("2030-01-01", tz="UTC")           # fecha ficticia: no choca con corridas reales
+    activas = d["bicis"][(d["bicis"]["fecha_baja"].isna())]["bicicleta_id"].tolist()
+    buena = pd.DataFrame({"bicicleta_id": activas, "sistema": None, "probabilidad": 0.25})
+    R.validar(buena, d, ahora)
+    comprobar("una predicción completa y válida pasa la validación", True)
+    for nombre, mala in [("NaN", buena.assign(probabilidad=np.nan)),
+                         ("mayor que 1", buena.assign(probabilidad=1.5)),
+                         ("faltan bicicletas", buena.iloc[1:])]:
+        try:
+            R.validar(mala, d, ahora)
+            comprobar(f"la validación rechaza predicciones con {nombre}", False)
+        except SystemExit:
+            comprobar(f"la validación rechaza predicciones con {nombre}", True)
+
+    def filas(c, fecha=None):
+        q = "SELECT count(*) FROM prediccion_mantenimiento WHERE left(modelo_version, 13) = 'tasa-poisson-'"
+        return c.execute(q + (" AND calculada_en = %s" if fecha is not None else ""),
+                         (fecha.to_pydatetime(),) if fecha is not None else None).fetchone()[0]
+
+    antes = filas(con)
+    with con.transaction(force_rollback=True):              # nada de esto queda en la base
+        R.guardar(con, buena, 30, ahora)
+        R.guardar(con, buena, 30, ahora)
+        comprobar("repetir la corrida del mismo día no duplica", filas(con, ahora) == len(buena))
+        R.guardar(con, buena.assign(probabilidad=0.5), 30, ahora + pd.Timedelta(days=1))
+        comprobar("un día nuevo se agrega y conserva el anterior",
+                  filas(con, ahora) == len(buena) and filas(con) == antes + 2 * len(buena))
+    comprobar("las pruebas no dejaron filas", filas(con) == antes)
 
 print("\n" + ("TODO OK" if not fallos else f"{len(fallos)} FALLO(S): {fallos}"))
 sys.exit(1 if fallos else 0)

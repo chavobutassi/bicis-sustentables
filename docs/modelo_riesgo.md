@@ -8,11 +8,12 @@ en total y por sistema (transmisión, frenos, neumáticos, cuadro, suspensión).
 pip install -r modelo/requirements.txt
 DATABASE_URL=postgresql:///bicis python3 modelo/riesgo_falla.py             # evalúa
 DATABASE_URL=postgresql:///bicis python3 modelo/riesgo_falla.py --escribir  # además guarda las predicciones de hoy
+DATABASE_URL=postgresql:///bicis python3 modelo/riesgo_falla.py --solo-puntuar --escribir  # modo desatendido
 DATABASE_URL=postgresql:///bicis python3 tests/prueba_modelo.py             # pruebas
 ```
 
-Tarda menos de un minuto. Todo es determinista (semilla fija). `--escribir` reemplaza las filas de la misma
-versión del modelo, así que se puede repetir.
+Tarda menos de un minuto. Todo es determinista (semilla fija). `--escribir` agrega las predicciones de hoy (ver
+[Actualización automática](#actualización-automática)); repetirlo el mismo día no duplica.
 
 ## Qué se predice y con qué información
 
@@ -99,9 +100,39 @@ transmisión y suspensión.
   bicicletas y no filas.
 - La falla por causas externas (daños y accidentes del cliente) no se predice: no depende del mantenimiento.
 
+## Actualización automática
+
+El workflow `.github/workflows/actualizar-predicciones.yml` corre todos los días a las 06:17 (hora de Argentina)
+y también a mano. Cada corrida **reentrena con todo lo que hay en la base** y agrega las predicciones de hoy;
+tarda cerca de un minuto. Para activarlo hay que hacer una sola vez:
+
+1. En GitHub: *Settings > Secrets and variables > Actions > New repository secret*, con nombre `DATABASE_URL` y
+   la cadena de conexión de la base. En Supabase, la del **Session pooler** (la conexión directa es solo IPv6 y
+   GitHub no la alcanza). Sin el secreto el job no falla: se omite y deja una advertencia.
+2. Probarlo una vez: *Actions > Actualizar predicciones > Run workflow*, y mirar el registro (dice cuántas
+   predicciones guardó y las tres bicicletas de mayor riesgo).
+
+Cómo está pensado para no hacer daño:
+
+- **Historial.** Cada día agrega una tanda nueva; repetir la corrida del mismo día reemplaza solo la de ese día.
+  Las anteriores se conservan para poder medir con el tiempo si las probabilidades se cumplieron. La app usa
+  siempre la más reciente. Son unas 340 filas por día (unas 120.000 por año); si molesta, se pueden borrar las
+  viejas.
+- **No escribe si algo está mal.** Aborta sin tocar la base si hay probabilidades inválidas (NaN o fuera de 0 a 1)
+  o si falta alguna bicicleta activa. El workflow falla y GitHub avisa por correo.
+- **Datos viejos.** Si el último dato de la base tiene más de 7 días, calcula desde esa fecha y avisa, en lugar de
+  proyectar con un ritmo de uso casi nulo y dar riesgos engañosos.
+- **Una a la vez.** Un bloqueo en la base y la cola del workflow evitan corridas simultáneas.
+- **Si deja de funcionar**, el taller lo muestra: pasados 4 días sin una predicción nueva aparece un aviso rojo.
+
+Sin GitHub Actions, el mismo comando sirve en cualquier programador de tareas (cron en Linux, Programador de
+tareas en Windows): `python modelo/riesgo_falla.py --solo-puntuar --escribir` con `DATABASE_URL` definida.
+
+No se re-evalúa solo: `resultados.json` y las tablas de este documento salen de correr el script sin
+`--solo-puntuar`, y conviene repetirlo de vez en cuando (por ejemplo cada tres meses, o al agregar una temporada).
+
 ## Próximos pasos
 
 1. Mejorar el pronóstico de uso (es lo que separa 0,59 de 0,69 de AUC): clima, feriados, reservas ya tomadas.
-2. Usar `prediccion_mantenimiento` en la aplicación del taller, para ordenar las órdenes preventivas por riesgo
-   en lugar de solo por vencimiento.
+2. Medir con el historial acumulado si las probabilidades guardadas se cumplieron (calibración real).
 3. Tablero en Power BI (punto 3 de la hoja de ruta) con las predicciones y las vistas de mantenimiento.

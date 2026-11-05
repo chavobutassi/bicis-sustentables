@@ -27,10 +27,11 @@
 {% if prediccion_fecha %}
 <p class="suave">Ordenados por riesgo de falla del sistema en los próximos 30 días (modelo del {{ prediccion_fecha|fecha }}).
   El riesgo es relativo a la flota y no reemplaza al vencimiento.</p>
-{% if prediccion_vieja %}<p class="aviso-error" role="alert">Las predicciones tienen más de 14 días: volvé a correr
-  <code>modelo/riesgo_falla.py --escribir</code> para actualizarlas.</p>{% endif %}
+{% if prediccion_vieja %}<p class="aviso-error" role="alert">Las predicciones tienen más de {{ dias_prediccion_vieja }} días: la
+  actualización automática no está funcionando. Revisá la pestaña Actions del repositorio o corré
+  <code>modelo/riesgo_falla.py --solo-puntuar --escribir</code>.</p>{% endif %}
 {% else %}<p class="suave">Sin predicciones de riesgo: se ordena solo por vencimiento
-  (correr <code>modelo/riesgo_falla.py --escribir</code>).</p>{% endif %}
+  (correr <code>modelo/riesgo_falla.py --solo-puntuar --escribir</code>).</p>{% endif %}
 <div class="tabla-scroll"><table>
   <tr><th>Bicicleta</th><th>Tarea</th><th class="num">Riesgo del sistema</th><th class="num">Riesgo de la bici</th>
       <th class="num">Horas restantes</th><th class="num">Días restantes</th><th></th></tr>

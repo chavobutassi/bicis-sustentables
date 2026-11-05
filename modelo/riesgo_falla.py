@@ -11,6 +11,10 @@ evaluar qué tan cerca queda el modelo del proceso verdadero.
 Uso:
     DATABASE_URL=postgresql:///bicis python3 modelo/riesgo_falla.py
     DATABASE_URL=... python3 modelo/riesgo_falla.py --escribir   # guarda en prediccion_mantenimiento
+    DATABASE_URL=... python3 modelo/riesgo_falla.py --solo-puntuar --escribir   # modo desatendido (job diario)
+
+El modo desatendido no evalúa ni usa los archivos de la verdad simulada: reentrena con todo lo que hay en la
+base y agrega las predicciones de hoy. Conserva las de días anteriores, así que se puede correr todos los días.
 """
 import argparse
 import gzip
@@ -298,14 +302,15 @@ def metricas(y, p):
             "lift_decil_superior": float(y[top].mean() / y.mean()) if y.mean() > 0 else float("nan")}
 
 
-def alquileres_con_variables(d):
+def alquileres_con_variables(d, con_verdad=True):
     a = d["alquileres"]
     v = variables(d, a[["bicicleta_id", "t"]].drop_duplicates())
     x = a.merge(v, on=["bicicleta_id", "t"], how="left")
     assert x[VARS_TASA].notna().all().all() and len(x) == len(a), "variables incompletas"
-    ruta = RAIZ / "data" / "verdad_exposicion.csv.gz"
-    with gzip.open(ruta, "rt") as f:
-        x = x.merge(pd.read_csv(f)[["detalle_id", "prob_falla", "tasa_por_hora"]], on="detalle_id")
+    if con_verdad:  # solo para evaluar contra el simulador; en producción no existe
+        ruta = RAIZ / "data" / "verdad_exposicion.csv.gz"
+        with gzip.open(ruta, "rt") as f:
+            x = x.merge(pd.read_csv(f)[["detalle_id", "prob_falla", "tasa_por_hora"]], on="detalle_id")
     return x
 
 
@@ -452,16 +457,51 @@ def puntuar_hoy(d, x, panel, horizonte, ahora):
     return pd.concat(filas, ignore_index=True)
 
 
+def fecha_de_calculo(ultimo, fecha=None, hoy=None, dias_maximos=7):
+    """Fecha (medianoche UTC) a la que se calculan las predicciones.
+
+    Por defecto es hoy. Si el último dato de la base tiene más de `dias_maximos` días, hoy no sirve (el ritmo de
+    uso daría casi cero y las predicciones serían engañosas): se calcula al día siguiente del último dato y se avisa.
+    """
+    if fecha:
+        return pd.Timestamp(fecha, tz="UTC")
+    hoy = (hoy or pd.Timestamp.now(tz="UTC")).normalize()
+    if (hoy - ultimo.normalize()).days > dias_maximos:
+        print(f"AVISO: el último dato es del {ultimo.date()}, hace más de {dias_maximos} días; "
+              "se calcula a partir de esa fecha.", file=sys.stderr)
+        return ultimo.normalize() + pd.Timedelta(days=1)
+    return max(hoy, ultimo.normalize())
+
+
+def validar(pred, d, ahora):
+    """Aborta antes de escribir si las predicciones no son confiables."""
+    p = pred["probabilidad"].astype(float)
+    if not np.isfinite(p).all() or ((p < 0) | (p > 1)).any():
+        raise SystemExit("Predicciones inválidas (NaN o fuera de [0, 1]): no se escribe nada.")
+    activas = set(d["bicis"][(d["bicis"]["fecha_baja"].isna()) & (d["bicis"]["fecha_alta"] <= ahora)]["bicicleta_id"])
+    totales = set(pred[pred["sistema"].isna()]["bicicleta_id"])
+    if not activas or totales != activas:
+        raise SystemExit(f"Faltan o sobran bicicletas en las predicciones ({len(totales)} de {len(activas)}): "
+                         "no se escribe nada.")
+
+
 def guardar(con, pred, horizonte, ahora):
+    """Agrega las predicciones de `ahora`. Conserva las de fechas anteriores (historial para medir el
+    modelo con el tiempo); repetir la corrida del mismo día reemplaza solo las de ese día."""
     version = f"tasa-poisson-{VERSION}"
-    with con.cursor() as cur:
-        cur.execute("DELETE FROM prediccion_mantenimiento WHERE modelo_version = %s", (version,))
-        cur.executemany(
-            "INSERT INTO prediccion_mantenimiento (bicicleta_id, calculada_en, horizonte_dias, sistema, probabilidad, modelo_version)"
-            " VALUES (%s, %s, %s, %s, %s, %s)",
-            [(int(r.bicicleta_id), ahora.to_pydatetime(), horizonte, r.sistema,
-              round(float(min(max(r.probabilidad, 0.0), 1.0)), 4), version) for r in pred.itertuples()])
-    con.commit()
+    with con.transaction():
+        with con.cursor() as cur:
+            cur.execute("SELECT pg_try_advisory_xact_lock(734210)")
+            if not cur.fetchone()[0]:
+                print("Hay otra corrida en curso: se omite esta.")
+                return 0, version
+            cur.execute("DELETE FROM prediccion_mantenimiento WHERE modelo_version = %s AND calculada_en = %s",
+                        (version, ahora.to_pydatetime()))
+            cur.executemany(
+                "INSERT INTO prediccion_mantenimiento (bicicleta_id, calculada_en, horizonte_dias, sistema, probabilidad, modelo_version)"
+                " VALUES (%s, %s, %s, %s, %s, %s)",
+                [(int(r.bicicleta_id), ahora.to_pydatetime(), horizonte, r.sistema,
+                  round(float(min(max(r.probabilidad, 0.0), 1.0)), 4), version) for r in pred.itertuples()])
     return len(pred), version
 
 
@@ -470,6 +510,9 @@ def main():
     ap.add_argument("--horizonte", type=int, default=30, help="días hacia adelante (por defecto 30)")
     ap.add_argument("--corte", default="2026-03-01", help="fecha de corte train/test (AAAA-MM-DD)")
     ap.add_argument("--escribir", action="store_true", help="guardar predicciones de hoy en la base")
+    ap.add_argument("--solo-puntuar", action="store_true",
+                    help="modo desatendido: no evalúa ni toca resultados.json ni usa la verdad simulada")
+    ap.add_argument("--fecha", help="fecha de cálculo AAAA-MM-DD (por defecto, hoy)")
     ap.add_argument("--salida", default=str(RAIZ / "modelo" / "resultados.json"))
     a = ap.parse_args()
     url = os.environ.get("DATABASE_URL")
@@ -478,24 +521,30 @@ def main():
     with psycopg.connect(url) as con:
         d = cargar(con)
         ultimo = max(d["usos"]["devuelta_en"].max(), d["fallas"]["ocurrida_en"].max())
-        ahora = (ultimo + pd.Timedelta(days=1)).normalize()
-        x = alquileres_con_variables(d)
+        ahora = fecha_de_calculo(ultimo, a.fecha)
+        x = alquileres_con_variables(d, con_verdad=not a.solo_puntuar)
         ultima_foto = ahora - pd.Timedelta(days=a.horizonte)
         panel = construir_panel(d, "2025-01-01", ultima_foto, a.horizonte)
-        panel["p_verdad"] = verdad_ventana(panel, a.horizonte)
-        panel_eval = agregar_pronostico(panel, d, pd.Timestamp(a.corte, tz="UTC"), a.horizonte)
-        res = {"alquiler": evaluar_alquileres(x, a.corte),
-               "por_sistema": evaluar_sistemas(x, a.corte),
-               "panel_30d": evaluar_panel(panel_eval, x, a.horizonte, a.corte),
-               "parametros": {"horizonte_dias": a.horizonte, "corte": a.corte, "primera_foto": "2025-01-01",
-                              "ultima_foto": str(ultima_foto.date()), "paso_dias": 7,
-                              "variables_tasa": VARS_TASA, "variables_directo": VARS_BASE}}
-        Path(a.salida).write_text(json.dumps(res, indent=2, ensure_ascii=False))
-        print(json.dumps({k: v for k, v in res.items() if k != "parametros"}, indent=2, ensure_ascii=False))
+        if not a.solo_puntuar:
+            panel["p_verdad"] = verdad_ventana(panel, a.horizonte)
+            panel_eval = agregar_pronostico(panel, d, pd.Timestamp(a.corte, tz="UTC"), a.horizonte)
+            res = {"alquiler": evaluar_alquileres(x, a.corte),
+                   "por_sistema": evaluar_sistemas(x, a.corte),
+                   "panel_30d": evaluar_panel(panel_eval, x, a.horizonte, a.corte),
+                   "parametros": {"horizonte_dias": a.horizonte, "corte": a.corte, "primera_foto": "2025-01-01",
+                                  "ultima_foto": str(ultima_foto.date()), "paso_dias": 7,
+                                  "variables_tasa": VARS_TASA, "variables_directo": VARS_BASE}}
+            Path(a.salida).write_text(json.dumps(res, indent=2, ensure_ascii=False))
+            print(json.dumps({k: v for k, v in res.items() if k != "parametros"}, indent=2, ensure_ascii=False))
         if a.escribir:
             pred = puntuar_hoy(d, x, panel, a.horizonte, ahora)
+            validar(pred, d, ahora)
             n, v = guardar(con, pred, a.horizonte, ahora)
-            print(f"\nGuardadas {n} predicciones ({v}) al {ahora.date()}.")
+            mayores = pred[pred["sistema"].isna()].merge(d["bicis"][["bicicleta_id"]], on="bicicleta_id") \
+                .nlargest(3, "probabilidad")
+            print(f"Guardadas {n} predicciones ({v}) calculadas al {ahora.date()} con datos hasta {ultimo.date()}.")
+            print("Mayor riesgo total: " + ", ".join(f"bici {int(r.bicicleta_id)} {r.probabilidad:.0%}"
+                                                     for r in mayores.itertuples()))
 
 
 if __name__ == "__main__":

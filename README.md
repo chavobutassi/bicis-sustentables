@@ -112,6 +112,7 @@ Es determinista: la misma semilla y fecha dan exactamente el mismo archivo. `--e
 
 ```
 db/           esquema (schema.sql) y cierre de seguridad para Supabase
+.github/      job diario que actualiza las predicciones de riesgo
 generador/    simulación que produce los datos sintéticos
 data/         seed.sql.gz y la verdad simulada (verdad_*.csv)
 app/          aplicación web
@@ -124,7 +125,7 @@ docs/         diseño, diagrama entidad-relación y datos sintéticos
 ## Hoja de ruta
 
 1. **Hecho:** base con reglas, generador, aplicación de mostrador.
-2. **Hecho:** modelo de riesgo de falla por bicicleta y sistema (tasa por hora de uso con regresión de Poisson, evaluada contra la regla de vencimiento y contra la verdad simulada). Resultados en `prediccion_mantenimiento`. Detalle y límites en [docs/modelo_riesgo.md](docs/modelo_riesgo.md).
+2. **Hecho:** modelo de riesgo de falla por bicicleta y sistema (tasa por hora de uso con regresión de Poisson, evaluada contra la regla de vencimiento y contra la verdad simulada). Resultados en `prediccion_mantenimiento`, que se actualiza sola todos los días con un job de GitHub Actions y se usa para ordenar el taller por riesgo. Detalle, límites y cómo activarlo en [docs/modelo_riesgo.md](docs/modelo_riesgo.md).
 3. **Tablero en Power BI** sobre las vistas (ocupación, ingresos, rentabilidad por bicicleta, mantenimiento vencido).
 4. Reserva en línea para clientes con pago de la seña, y redistribución de bicicletas entre estaciones.
 

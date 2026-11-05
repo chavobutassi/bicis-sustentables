@@ -85,6 +85,9 @@ def porcentaje(valor):
 # Niveles de riesgo de falla a 30 días. Son relativos a la flota (aprox. el 25 % y el 10 % superior de las
 # predicciones del modelo, ver docs/modelo_riesgo.md), no una probabilidad "peligrosa" en sí.
 UMBRALES_RIESGO = {"total": (0.30, 0.40), "sistema": (0.06, 0.09)}
+# Las predicciones se actualizan solas una vez por día (ver docs/modelo_riesgo.md): si pasan más de estos días
+# sin una nueva, el taller avisa que algo falló.
+DIAS_PREDICCION_VIEJA = 4
 
 
 def nivel_riesgo(valor, clase="total"):
@@ -957,9 +960,9 @@ def vista_taller(request, usuario, error=None, ok=None, estado=200):
             ORDER BY pt.probabilidad DESC LIMIT 8""", (UMBRALES_RIESGO["total"][1],))
     vigencia = db.consultar("SELECT max(calculada_en) AS calculada_en FROM prediccion_mantenimiento WHERE horizonte_dias = 30")
     calculada = vigencia[0]["calculada_en"] if vigencia else None
-    desactualizada = calculada is not None and (datetime.now(calculada.tzinfo) - calculada).days > 14
+    desactualizada = calculada is not None and (datetime.now(calculada.tzinfo) - calculada).days > DIAS_PREDICCION_VIEJA
     return pantalla(request, "taller.html", {"ordenes": ordenes, "pendientes": pendientes, "riesgo_alto": riesgo_alto,
-                                             "prediccion_fecha": calculada, "prediccion_vieja": desactualizada,
+                                             "prediccion_fecha": calculada, "prediccion_vieja": desactualizada, "dias_prediccion_vieja": DIAS_PREDICCION_VIEJA,
                                              "error": error, "ok": ok}, estado, usuario)
 
 
